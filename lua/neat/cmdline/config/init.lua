@@ -71,7 +71,7 @@ function M.defaults()
     -- confirm() and `:s///c` prompts
     ---@type CmdlineConfirmOptions
     confirm = {
-      style = "box", -- "box": centred near the top, as in noice; "toast": top-right corner; "ui2": ui2's bottom line
+      style = "center", -- "center": middle of the editor; "box": centred near the top, as in noice; "toast": top-right corner; "ui2": ui2's bottom line
       title = " Confirm ",
     },
     throttle = 1000 / 30, -- how often to check for updates when Neovim is not blocking
@@ -103,8 +103,8 @@ local function validate(o)
   vim.validate("neat.cmdline.format", o.cmdline.format, "table")
   vim.validate("confirm", o.confirm, "table")
   vim.validate("confirm.style", o.confirm.style, function(v)
-    return v == "box" or v == "toast" or v == "ui2"
-  end, false, '"box", "toast" or "ui2"')
+    return v == "center" or v == "box" or v == "toast" or v == "ui2"
+  end, false, '"center", "box", "toast" or "ui2"')
   vim.validate("ui2", o.ui2, "table")
   vim.validate("ui2.disable_cmdline", o.ui2.disable_cmdline, "boolean")
   vim.validate("ui2.pager", o.ui2.pager, function(v)

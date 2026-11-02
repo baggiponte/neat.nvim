@@ -73,7 +73,7 @@ cmdline                                                         *neat-cmdline*
     line empty
     while the popup is open, shows ui2's pager as a centred float, and
     shows |confirm()| prompts in a float. Options: `cmdline` (view, format),
-    `confirm` (`style` = "box", "toast" or "ui2"), `ui2` (`disable_cmdline`,
+    `confirm` (`style` = "center", "box", "toast" or "ui2"), `ui2` (`disable_cmdline`,
     `pager`), `throttle`, `views`, `format`, `debug`. Defaults are in
     lua/neat/cmdline/config/init.lua. Highlight groups keep noice's names
     (`NoiceCmdlinePopup`, ...).
