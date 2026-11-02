@@ -52,8 +52,11 @@ jobs:
           neovim: true
           version: stable
       - name: Install lua-language-server
+        env:
+          GH_TOKEN: ${{ github.token }} # unauthenticated API calls get rate-limited (403)
         run: |
-          url=$(curl -fsSL https://api.github.com/repos/LuaLS/lua-language-server/releases/latest \
+          url=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/LuaLS/lua-language-server/releases/latest \
             | jq -r '.assets[] | select(.name | endswith("linux-x64.tar.gz")) | .browser_download_url')
           mkdir -p "$RUNNER_TEMP/luals"
           curl -fsSL "$url" | tar xz -C "$RUNNER_TEMP/luals"
