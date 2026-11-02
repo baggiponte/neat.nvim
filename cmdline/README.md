@@ -9,6 +9,8 @@ It is a trimmed copy of noice.nvim: the cmdline UI, its views and the text
 rendering are kept as they were, and noice's message router, filters, message
 history, popupmenu, notify/LSP integrations, commands and health checks are gone.
 
+![cmdline.nvim: the centred cmdline popup](demo/out/cmdline/demo.gif)
+
 ## Requirements
 
 - Neovim 0.11+ (0.12 for ui2)
@@ -16,15 +18,15 @@ history, popupmenu, notify/LSP integrations, commands and health checks are gone
 
 ## Setup
 
-With lazy.nvim:
+cmdline.nvim lives in [neat.nvim](https://github.com/baggiponte/neat.nvim) and is
+published on its own `cmdline` branch. With `vim.pack`:
 
 ```lua
-{
-  'baggiponte/cmdline.nvim',
-  event = 'VeryLazy',
-  dependencies = { 'MunifTanjim/nui.nvim' },
-  opts = {},
-}
+vim.pack.add({
+  'https://github.com/MunifTanjim/nui.nvim',
+  { src = 'https://github.com/baggiponte/neat.nvim', version = 'cmdline', name = 'cmdline.nvim' },
+})
+require('cmdline').setup({})
 ```
 
 Enable ui2 as usual, early in your config:
@@ -98,6 +100,14 @@ Highlight groups keep noice's names (`NoiceCmdlinePopup`,
 plugins that already handle noice's popup keep working.
 
 ## Demo
+
+The GIF at the top shows the cmdline popup (`:` commands, completion, `:lua`,
+search, filter, input). This one shows `:messages` in ui2's pager as a centred
+float, and `confirm()` and `:s///c` in a box:
+
+![cmdline.nvim dialogs](demo/out/cmdline/dialogs.gif)
+
+For comparison, the same steps with noice.nvim are in `demo/out/baseline/`.
 
 `demo/cmdline.tape` runs the same steps against two configs:
 

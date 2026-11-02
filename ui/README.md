@@ -4,6 +4,21 @@ The UI pieces this Neovim config used from [snacks.nvim](https://github.com/folk
 [dressing.nvim](https://github.com/stevearc/dressing.nvim), copied with attribution (see `NOTICE`) so both
 plugins can go. Requires Neovim 0.12.
 
+![ui.nvim: select, input, notify and indent](demo/ui.gif)
+
+## Install
+
+ui.nvim lives in [neat.nvim](https://github.com/baggiponte/neat.nvim) and is
+published on its own `ui` branch. With `vim.pack`:
+
+```lua
+vim.pack.add({
+  { src = 'https://github.com/baggiponte/neat.nvim', version = 'ui', name = 'ui.nvim' },
+})
+```
+
+## Setup
+
 ```lua
 require('ui').setup({
   select = {},                        -- vim.ui.select as a telescope dropdown (dressing)
@@ -22,6 +37,19 @@ Every module is on unless its table has `enabled = false`.
 | `notify` | `snacks`: vendored snacks toasts. `native`: no toasts; ui2 shows messages and LSP progress goes through `nvim_echo{kind='progress'}`. `nvim-notify`: hands `vim.notify` to [nvim-notify](https://github.com/rcarriga/nvim-notify). `lsp_progress = true` (default) renders `$/progress` with whichever is active. `:UiNotifications` opens the matching history. |
 | `indent` | `snacks`: vendored indent + scope guides without animation. `blink`: [blink.indent](https://github.com/saghen/blink.indent). |
 | `rename` | `require('ui.rename').on_rename_file(from, to)` sends `willRenameFiles`/`didRenameFiles`; wire it to neo-tree's `FILE_MOVED`/`FILE_RENAMED`. |
+
+## Demo
+
+`demo/ui.gif` (above) shows the default setup: telescope `vim.ui.select`, the
+floating input, snacks toasts with LSP progress and blink.indent guides. The
+other backends are recorded alongside it:
+
+| Recording | Notify | Indent |
+| --- | --- | --- |
+| [`demo/ui-a.gif`](demo/ui-a.gif) | snacks | snacks |
+| [`demo/ui-b.gif`](demo/ui-b.gif) | native (ui2) | blink |
+| [`demo/ui-c.gif`](demo/ui-c.gif) | nvim-notify | snacks |
+| [`demo/ui-base.gif`](demo/ui-base.gif) | snacks.nvim + dressing.nvim, before this plugin | |
 
 ## Review
 
