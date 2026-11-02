@@ -114,7 +114,7 @@ function Scrollbar:update()
     height = vim.api.nvim_win_get_height(self.winnr) + self.opts.padding.top + self.opts.padding.bottom,
   }
 
-  local buf_height = Util.nneat.win_buf_height(self.winnr)
+  local buf_height = Util.nui.win_buf_height(self.winnr)
 
   if self.opts.autohide and dim.height >= buf_height then
     self:hide()

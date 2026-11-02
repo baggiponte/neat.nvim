@@ -254,7 +254,7 @@ function View:render(buf, opts)
 
   if self._opts.buf_options then
     Util.ignore_events(function()
-      require("nneat.utils")._.set_buf_options(buf, self._opts.buf_options)
+      require("nui.utils")._.set_buf_options(buf, self._opts.buf_options)
     end)
   end
 
