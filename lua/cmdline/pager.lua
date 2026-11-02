@@ -60,6 +60,7 @@ function M.float()
 
   pcall(vim.api.nvim_win_set_config, win, {
     relative = "editor",
+    anchor = "NW", -- ui2 anchors its windows to the bottom right (SE)
     row = math.floor((lines - height) / 2) - 1,
     col = math.floor((columns - width) / 2) - 1,
     width = width,
