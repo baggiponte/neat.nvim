@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Launch a review config:  nvim-review ui-a [files...]
+# Variants live in ~/.config/nvim-<variant>; see review/make-variants.sh.
+set -euo pipefail
+if [[ $# -lt 1 ]]; then
+  echo "usage: nvim-review <variant> [nvim args...]"
+  echo "variants:"; ls -d "$HOME"/.config/nvim-*/ 2>/dev/null | xargs -n1 basename | sed 's/^nvim-/  /'
+  exit 1
+fi
+v="${1#nvim-}"; shift
+[[ -d "$HOME/.config/nvim-$v" ]] || { echo "no such variant: ~/.config/nvim-$v" >&2; exit 1; }
+NVIM_APPNAME="nvim-$v" exec nvim "$@"
