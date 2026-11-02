@@ -43,7 +43,7 @@ jobs:
       - uses: JohnnyMorganz/stylua-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
+          version: v2.6.0 # keep in step with .pre-commit-config.yaml
           args: --check ${{ matrix.plugin }}/lua ${{ matrix.plugin }}/plugin
 
   luals:

@@ -49,6 +49,10 @@ from each README on every push to `main`.
 Work on `main`. To rebuild the per-plugin branches locally, run
 `scripts/split.sh` (add `--push` to publish them).
 
+Formatting runs on commit through [prek](https://github.com/j178/prek)
+(`prek install` once; `prek run --all-files` to format everything), using the
+StyLua version CI checks with.
+
 The `check` workflow runs on every push and pull request: stylua, a LuaLS
 type check (errors only), and `tests/smoke.lua`, which loads each plugin
 headless the way `vim.pack` does and runs its command and health check:
