@@ -1,0 +1,44 @@
+30c30
+<   [  INSERT ]                           fg=- bg=- cterm=-
+---
+>   [  INSERT ]                           fg=#89b482 bg=- cterm=108
+40,41c40,41
+<   [   5:1  ]                               fg=- bg=- cterm=-
+<   [  2% ]                                  fg=- bg=- cterm=-
+---
+>   [   5:1  ]                               fg=#89b482 bg=- cterm=108
+>   [  2% ]                                  fg=#89b482 bg=- cterm=108
+136c136
+<   [  INSERT ]                           fg=- bg=- cterm=-
+---
+>   [  INSERT ]                           fg=#89b482 bg=- cterm=108
+147,148c147,148
+<   [ 233:1  ]                               fg=- bg=- cterm=-
+<   [ Bot ]                                  fg=- bg=- cterm=-
+---
+>   [ 233:1  ]                               fg=#89b482 bg=- cterm=108
+>   [ Bot ]                                  fg=#89b482 bg=- cterm=108
+164,165c164,165
+< text: [  TERMINAL   main  term://~/dev/projs/statusline.nvim//86439:/bin/zsh                                                                   fake_ls    3:3    7% ]
+<   [  TERMINAL ]                         fg=- bg=- cterm=-
+---
+> text: [  TERMINAL   main  term://~/dev/projs/statusline.nvim//87457:/bin/zsh                                                                   fake_ls    3:3    7% ]
+>   [  TERMINAL ]                         fg=#d3869b bg=- cterm=175
+167c167
+<   [ term://~/dev/projs/statusline.nvim//86439:/bin/zsh ] fg=#ddc7a1 bg=- cterm=187
+---
+>   [ term://~/dev/projs/statusline.nvim//87457:/bin/zsh ] fg=#ddc7a1 bg=- cterm=187
+169,170c169,170
+<   [   3:3  ]                               fg=- bg=- cterm=-
+<   [  7% ]                                  fg=- bg=- cterm=-
+---
+>   [   3:3  ]                               fg=#d3869b bg=- cterm=175
+>   [  7% ]                                  fg=#d3869b bg=- cterm=175
+173c173
+< text: [  NORMAL   main  term://~/dev/projs/statusline.nvim//86439:/bin/zsh                                                                     fake_ls    3:2    7% ]
+---
+> text: [  NORMAL   main  term://~/dev/projs/statusline.nvim//87457:/bin/zsh                                                                     fake_ls    3:2    7% ]
+176c176
+<   [ term://~/dev/projs/statusline.nvim//86439:/bin/zsh ] fg=#ddc7a1 bg=- cterm=187
+---
+>   [ term://~/dev/projs/statusline.nvim//87457:/bin/zsh ] fg=#ddc7a1 bg=- cterm=187

@@ -1,0 +1,6 @@
+demo/out/*/demo.gif
+demo/out/*/run.tape
+review/feedback.json
+review/server.*
+!review/server.py
+review/.feedback.*

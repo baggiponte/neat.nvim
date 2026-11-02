@@ -1,0 +1,11 @@
+statusline.nvim
+Copyright (c) 2026 baggiponte. MIT licence, see LICENSE.
+
+This project contains code adapted from:
+
+  lualine.nvim (https://github.com/nvim-lualine/lualine.nvim)
+  Copyright (c) 2020 hoob3rt
+  MIT licence, see LICENSES/lualine-MIT.txt
+  Taken at commit 221ce6b2d999187044529f49da6554a92f740a96.
+  Files: lua/statusline/{cache,components,config,cterm,extensions,highlights}.lua
+  (each carries a header naming the upstream files and what changed).
