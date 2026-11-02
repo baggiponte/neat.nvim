@@ -20,25 +20,6 @@ M.config = setmetatable({}, {
   end,
 })
 
---- Accept the older names for the builtin notify/indent backends: `backend = "snacks"`
---- and a `snacks = {...}` options table mean `backend = "builtin"` and `builtin = {...}`.
---- The code they name is neat's own copy of snacks.nvim's; snacks.nvim is never required.
----@generic T: table
----@param name string module name, for messages
----@param opts T
----@return T
-function M.builtin_alias(name, opts)
-  if opts.backend == "snacks" then
-    opts.backend = "builtin"
-  end
-  if opts.snacks ~= nil then
-    vim.validate(name .. ".snacks", opts.snacks, "table")
-    opts.builtin = vim.tbl_deep_extend("force", opts.snacks, opts.builtin or {})
-    opts.snacks = nil
-  end
-  return opts
-end
-
 local function is_dict_like(v) -- has string and number keys
   return type(v) == "table" and (vim.tbl_isempty(v) or not vim.islist(v))
 end

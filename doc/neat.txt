@@ -108,9 +108,7 @@ indent                                                           *neat-indent*
     (blink.indent). `builtin` and `blink` pass options to each backend.
 
     "builtin" is code adapted from snacks.nvim that ships inside neat, so
-    its options keep snacks' names; snacks.nvim is not needed. `backend =
-    "snacks"` and a `snacks` options table are accepted as older names for
-    "builtin" and `builtin`.
+    its options keep snacks' names; snacks.nvim is not needed.
 
 rename                                                           *neat-rename*
     `require('neat.rename').on_rename_file(from, to, rename?)` sends LSP

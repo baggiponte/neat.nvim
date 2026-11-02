@@ -14,8 +14,8 @@ local known = {
     win = true,
     expand = true,
   },
-  notify = { enabled = true, backend = true, builtin = true, snacks = true, nvim_notify = true },
-  indent = { enabled = true, backend = true, builtin = true, snacks = true, blink = true },
+  notify = { enabled = true, backend = true, builtin = true, nvim_notify = true },
+  indent = { enabled = true, backend = true, builtin = true, blink = true },
 }
 
 ---@param name string

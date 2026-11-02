@@ -171,8 +171,7 @@ indent = {
 ```
 
 `builtin` is neat's own copy of the snacks.nvim code, so its options keep
-snacks' names. `backend = 'snacks'` and a `snacks = {...}` table are still
-accepted as older names for `builtin`; they never load snacks.nvim.
+snacks' names, but it never loads snacks.nvim.
 
 ![select, input, notify and indent](dev/ui-demo/ui.gif)
 

@@ -3,19 +3,17 @@
 --
 -- * "builtin": neat's own notifier, toasts bottom-right. Its code is adapted
 --   from snacks.nvim and ships inside neat; snacks.nvim is not needed.
---   "snacks" is accepted as an older name for it.
 -- * "native": leave vim.notify to Neovim (ui2 shows messages when enabled)
 -- * "nvim-notify": rcarriga/nvim-notify, which must be installed separately
 
 local M = {}
 
----@alias ui.notify.backend "builtin"|"native"|"nvim-notify"|"snacks"
+---@alias ui.notify.backend "builtin"|"native"|"nvim-notify"
 
 ---@class ui.notify.Config
 ---@field enabled? boolean
 ---@field backend? ui.notify.backend
 ---@field builtin? table options for the builtin notifier (see neat.notify.notifier)
----@field snacks? table old name for `builtin`
 ---@field nvim_notify? table options passed to `require("notify").setup()`
 local defaults = {
   backend = "builtin",
@@ -52,7 +50,7 @@ end
 
 ---@param opts? ui.notify.Config
 function M.setup(opts)
-  config = require("neat.util").builtin_alias("notify", vim.tbl_deep_extend("force", defaults, opts or {}))
+  config = vim.tbl_deep_extend("force", defaults, opts or {})
   vim.validate("notify.backend", config.backend, function(v)
     return backends[v] ~= nil
   end, false, '"builtin", "native" or "nvim-notify"')

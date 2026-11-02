@@ -98,13 +98,7 @@ function tests.ui()
   vim.cmd("Neat indent toggle")
   check(require("neat.indent.guides").enabled, ":Neat indent toggle")
   check(not pcall(require("neat.notify").setup, { backend = "nope" }), "notify rejects an unknown backend")
-  -- "snacks" is the old name of the builtin backends
   check(not loaded("snacks"), "snacks.nvim is never required")
-  local alias = require("neat.util").builtin_alias("notify", { backend = "snacks", snacks = { timeout = 1 } })
-  check(alias.backend == "builtin" and alias.builtin.timeout == 1 and alias.snacks == nil, "snacks is an alias of builtin")
-  require("neat.indent").setup({ backend = "snacks", snacks = { indent = { char = "x" } } })
-  check(require("neat.indent").backend == "builtin", "indent accepts backend = 'snacks'")
-  check(require("neat.util").config.indent.indent.char == "x", "indent.snacks options reach the builtin guides")
   check(#health_errors() == 0, ":checkhealth neat has no errors")
 end
 

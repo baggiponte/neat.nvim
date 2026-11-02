@@ -2,16 +2,15 @@
 --
 -- * "builtin": neat's own indent + scope guides (neat.indent.guides). Their
 --   code is adapted from snacks.nvim and ships inside neat; snacks.nvim is not
---   needed. "snacks" is accepted as an older name for it.
+--   needed.
 -- * "blink": saghen/blink.indent, which must be installed separately
 
 local M = {}
 
 ---@class ui.indent.Config
 ---@field enabled? boolean
----@field backend? "builtin"|"blink"|"snacks"
+---@field backend? "builtin"|"blink"
 ---@field builtin? table options for the builtin guides (same shape as snacks.nvim's `indent`)
----@field snacks? table old name for `builtin`
 ---@field blink? table options passed to `require("blink.indent").setup()`
 local defaults = {
   backend = "builtin",
@@ -28,7 +27,7 @@ end
 
 ---@param opts? ui.indent.Config
 function M.setup(opts)
-  local config = require("neat.util").builtin_alias("indent", vim.tbl_deep_extend("force", defaults, opts or {}))
+  local config = vim.tbl_deep_extend("force", defaults, opts or {})
   vim.validate("indent.backend", config.backend, function(v)
     return v == "builtin" or v == "blink"
   end, false, '"builtin" or "blink"')
@@ -65,7 +64,7 @@ end
 function M.set(on)
   if M.backend == nil then
     -- `:Neat indent` without `indent.enabled`: use neat's `indent.builtin` options
-    local o = require("neat.util").builtin_alias("indent", vim.deepcopy(require("neat").options.indent or {}))
+    local o = require("neat").options.indent or {}
     require("neat.util").config.indent = o.builtin or {}
     M.backend = "builtin"
   end
