@@ -45,6 +45,10 @@ cmdline.nvim wraps ui2's cmdline handlers (`lua/cmdline/ui2.lua`):
 - `confirm()` and `:s///c` prompts go to ui2 in full; the popup stays closed
   and ui2 draws the choices at the bottom, like any other message.
 - `cmdline_hide` and multi-line `cmdline_block_*` events go to ui2 as-is.
+- ui2's pager (`:messages`, `g<`, long output) opens as a centred float
+  with a border instead of a panel at the bottom (`lua/cmdline/pager.lua`).
+  ui2 still owns it: `q` closes it. Set `ui2 = { pager = false }` to keep
+  the panel.
 
 Set `ui2 = { disable_cmdline = false }` to leave ui2 alone (the cmdline then
 shows in both places). This relies on ui2's private module layout; if it
@@ -70,7 +74,10 @@ Defaults, see `lua/cmdline/config/init.lua`:
       input       = { view = 'cmdline_input', icon = '󰥻 ' }, -- input()
     },
   },
-  ui2 = { disable_cmdline = true },
+  ui2 = {
+    disable_cmdline = true,
+    pager = { width = 0.8, height = 0.6, border = 'rounded', title = ' Messages ' }, -- or false
+  },
   throttle = 1000 / 30,
   views = {},  -- override cmdline, cmdline_popup, cmdline_input
   format = {},

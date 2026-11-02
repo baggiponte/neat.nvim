@@ -38,6 +38,15 @@ function M.defaults()
       -- When ui2 is enabled, stop it from drawing the cmdline (cmdline.nvim
       -- draws it) while ui2 keeps handling messages.
       disable_cmdline = true,
+      -- Show ui2's pager (`:messages`, `g<`, long output) as a centred float.
+      -- Set to `false` to keep ui2's panel at the bottom.
+      ---@type CmdlinePagerOptions|false
+      pager = {
+        width = 0.8, -- fraction of the editor width, or columns
+        height = 0.6, -- maximum fraction of the editor height, or lines
+        border = "rounded",
+        title = " Messages ",
+      },
     },
     throttle = 1000 / 30, -- how often to check for updates when Neovim is not blocking
     ---@type table<string, NoiceViewOptions>
