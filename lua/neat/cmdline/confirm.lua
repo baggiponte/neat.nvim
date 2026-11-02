@@ -1,18 +1,18 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: noice's `confirm` view and formatter, rewritten as a standalone
 -- float. The question comes from ui2's `msg_show` "confirm" event (or from the
--- prompt itself for `:s///c`) and the buttons from the cmdline prompt. Adds a
--- "toast" placement in the top-right corner.
+-- prompt itself for `:s///c`) and the buttons from the cmdline prompt. Adds
+-- "center" (middle of the editor) and "toast" (top-right corner) placements.
 
 local M = {}
 
 ---@class CmdlineConfirmOptions
----@field style "box"|"toast"|"ui2" box: centred near the top (noice); toast: top-right corner; ui2: leave it to ui2
+---@field style "center"|"box"|"toast"|"ui2" center: middle of the editor; box: centred near the top (noice); toast: top-right corner; ui2: leave it to ui2
 ---@field title string
 
 ---@type CmdlineConfirmOptions
 M.opts = {
-  style = "box",
+  style = "center",
   title = " Confirm ",
 }
 
@@ -96,11 +96,18 @@ function M.show(prompt)
   end
 
   local toast = M.opts.style == "toast"
+  local row = toast and 1 or 2
+  if M.opts.style == "center" then
+    -- the cmdline and statusline sit below the editor area, so centre within
+    -- the lines that are left; the +2 is the border
+    local area = vim.o.lines - vim.o.cmdheight - (vim.o.laststatus > 0 and 1 or 0)
+    row = math.max(math.floor((area - #content - 2) / 2), 0)
+  end
   local cfg = {
     relative = "editor",
     width = width + 2,
     height = #content,
-    row = toast and 1 or 2,
+    row = row,
     col = toast and (vim.o.columns - 1) or math.floor((vim.o.columns - width - 4) / 2),
     anchor = toast and "NE" or "NW",
     style = "minimal",

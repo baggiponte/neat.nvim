@@ -83,8 +83,9 @@ neat wraps ui2's cmdline handlers (`lua/neat/cmdline/ui2.lua`):
   the cmdline level and prompt, so it hides showcmd and the ruler and routes
   messages to its dialog while you type, but its bottom line stays empty.
 - `confirm()` and `:s///c` prompts open in their own float
-  (`lua/neat/cmdline/confirm.lua`): `confirm = { style = 'box' }` (top centre, like
-  noice), `'toast'` (top-right corner) or `'ui2'` (ui2's bottom line).
+  (`lua/neat/cmdline/confirm.lua`): `confirm = { style = 'center' }` (middle of
+  the editor), `'box'` (top centre, like noice), `'toast'` (top-right corner) or
+  `'ui2'` (ui2's bottom line).
 - `cmdline_hide` and multi-line `cmdline_block_*` events go to ui2 as-is.
 - ui2's pager (`:messages`, `g<`, long output) opens as a centred float
   with a border instead of a panel at the bottom (`lua/neat/cmdline/pager.lua`).
@@ -114,7 +115,7 @@ cmdline = {
       input       = { view = 'cmdline_input', icon = '󰥻 ' }, -- input()
     },
   },
-  confirm = { style = 'box', title = ' Confirm ' }, -- 'box' | 'toast' | 'ui2'
+  confirm = { style = 'center', title = ' Confirm ' }, -- 'center' | 'box' | 'toast' | 'ui2'
   ui2 = {
     disable_cmdline = true,
     pager = { width = 0.8, height = 0.6, border = 'rounded', title = ' Messages ' }, -- or false
