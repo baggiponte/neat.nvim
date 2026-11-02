@@ -27,7 +27,7 @@ local function check()
     return false
   end
   if not pcall(_G.require, "nui.object") then
-    vim.notify("neat.nvim cmdline needs nneat.nvim (MunifTanjim/nneat.nvim)", vim.log.levels.ERROR)
+    vim.notify("neat.nvim cmdline needs nui.nvim (MunifTanjim/nui.nvim)", vim.log.levels.ERROR)
     return false
   end
   return true

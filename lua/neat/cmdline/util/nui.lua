@@ -3,7 +3,7 @@
 local require = require("neat.cmdline.util.lazy")
 
 local Util = require("neat.cmdline.util")
-local _ = require("nneat.utils")._
+local _ = require("nui.utils")._
 
 local M = {}
 

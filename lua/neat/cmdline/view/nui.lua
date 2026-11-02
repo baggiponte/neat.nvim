@@ -97,7 +97,7 @@ function NuiView:create()
   self:update_layout()
   if self._opts.scrollbar ~= false then
     self._scroll = Scrollbar({
-      winnr = self._nneat.winid,
+      winnr = self._nui.winid,
       padding = Util.nui.normalize_padding(self._opts.border),
     })
     self._scroll:mount()
@@ -253,8 +253,8 @@ function NuiView:is_mounted()
     self._nui.bufnr = nil
   end
 
-  if self._nui and self._nneat.winid and not vim.api.nvim_win_is_valid(self._nneat.winid) then
-    self._nneat.winid = nil
+  if self._nui and self._nui.winid and not vim.api.nvim_win_is_valid(self._nui.winid) then
+    self._nui.winid = nil
   end
 
   if
@@ -291,19 +291,19 @@ function NuiView:show()
   vim.bo[self._nui.bufnr].modifiable = false
 
   self._nui:show()
-  if not self._nneat.winid then
+  if not self._nui.winid then
     return
   end
   self:tag()
   if not self._visible then
-    self:set_win_options(self._nneat.winid)
+    self:set_win_options(self._nui.winid)
     self:update_layout()
   end
 
   if self._scroll then
-    if self._scroll.winnr ~= self._nneat.winid then
+    if self._scroll.winnr ~= self._nui.winid then
       self._scroll:unmount()
-      self._scroll.winnr = self._nneat.winid
+      self._scroll.winnr = self._nui.winid
       self._scroll:mount()
     end
     self._scroll:update()

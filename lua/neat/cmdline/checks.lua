@@ -29,9 +29,9 @@ function M.check()
   end
 
   if pcall(require, "nui.object") then
-    health.ok("nneat.nvim is installed")
+    health.ok("nui.nvim is installed")
   else
-    health.error("nneat.nvim is not installed", "Install https://github.com/MunifTanjim/nneat.nvim")
+    health.error("nui.nvim is not installed", "Install https://github.com/MunifTanjim/nui.nvim")
   end
 
   if Config.is_running() then

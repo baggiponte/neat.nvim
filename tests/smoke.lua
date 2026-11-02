@@ -113,6 +113,15 @@ function tests.cmdline()
   require("neat").setup({ cmdline = { enabled = true } })
   vim.wait(1000, Config.is_running)
   check(Config.is_running(), "neat.setup({ cmdline = { enabled = true } }) starts it")
+  -- the popup only requires most modules (and nui) once you type ':', so load them all here
+  local root = vim.api.nvim_get_runtime_file("lua/neat/cmdline/init.lua", false)[1]:gsub("/init%.lua$", "")
+  for path in vim.fs.dir(root, { depth = 5 }) do
+    if path:match("%.lua$") then
+      local mod = ("neat.cmdline." .. path:gsub("%.lua$", ""):gsub("/", ".")):gsub("%.init$", "")
+      local ok, err = pcall(require, mod)
+      check(ok, "require('" .. mod .. "')" .. (ok and "" or ": " .. tostring(err)))
+    end
+  end
   check(#health_errors() == 0, ":checkhealth neat has no errors")
 end
 
