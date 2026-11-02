@@ -1,6 +1,7 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: only the cmdline options are left (no messages, popupmenu, notify,
--- LSP, routes, commands, redirect, presets or log file); added `ui2`.
+-- LSP, routes, commands, redirect, presets or log file); added `ui2`,
+-- validation and the user-facing `cmdline.Opts` type.
 ---@diagnostic disable: missing-fields
 local require = require("cmdline.util.lazy")
 
@@ -8,6 +9,25 @@ local M = {}
 
 -- Keep noice's namespace name: highlights and tags in other plugins look for it.
 M.ns = vim.api.nvim_create_namespace("noice")
+
+--- Options for `require("cmdline").setup()` or `vim.g.cmdline`. Every field is optional.
+---@class cmdline.Opts
+---@field cmdline? cmdline.Opts.cmdline
+---@field ui2? cmdline.Opts.ui2
+---@field confirm? CmdlineConfirmOptions
+---@field throttle? number milliseconds between updates when Neovim is not blocking
+---@field views? table<string, NoiceViewOptions> override the built-in views, see cmdline.config.views
+---@field format? NoiceFormatOptions override formatter options, see cmdline.config.format
+---@field debug? boolean append ui events to ./cmdline.nvim.log
+
+---@class cmdline.Opts.cmdline
+---@field view? "cmdline_popup"|"cmdline"
+---@field opts? NoiceViewOptions
+---@field format? table<string, CmdlineFormat|false>
+
+---@class cmdline.Opts.ui2
+---@field disable_cmdline? boolean
+---@field pager? CmdlinePagerOptions|false
 
 function M.defaults()
   ---@class CmdlineConfig
@@ -72,12 +92,39 @@ function M.is_running()
   return M._running
 end
 
----@param options? CmdlineConfig
+--- The options the user passed, before merging (the health check reads them).
+---@type cmdline.Opts
+M.user_options = {}
+
+---@param o CmdlineConfig
+local function validate(o)
+  vim.validate("cmdline", o.cmdline, "table")
+  vim.validate("cmdline.view", o.cmdline.view, "string")
+  vim.validate("cmdline.format", o.cmdline.format, "table")
+  vim.validate("confirm", o.confirm, "table")
+  vim.validate("confirm.style", o.confirm.style, function(v)
+    return v == "box" or v == "toast" or v == "ui2"
+  end, false, '"box", "toast" or "ui2"')
+  vim.validate("ui2", o.ui2, "table")
+  vim.validate("ui2.disable_cmdline", o.ui2.disable_cmdline, "boolean")
+  vim.validate("ui2.pager", o.ui2.pager, function(v)
+    return v == false or type(v) == "table"
+  end, false, "table or false")
+  vim.validate("throttle", o.throttle, "number")
+  vim.validate("views", o.views, "table")
+  vim.validate("format", o.format, "table")
+  vim.validate("debug", o.debug, "boolean")
+end
+
+--- Merge and validate the options. Errors on a wrong type.
+---@param options? cmdline.Opts
 function M.setup(options)
+  M.user_options = options or {}
   M.options = vim.tbl_deep_extend("force", {}, M.defaults(), {
     views = require("cmdline.config.views").defaults,
     format = require("cmdline.config.format").defaults,
   }, options or {})
+  validate(M.options)
 
   require("cmdline.config.cmdline").setup()
 
@@ -86,10 +133,12 @@ function M.setup(options)
     group = vim.api.nvim_create_augroup("cmdline.highlights", { clear = true }),
     callback = function()
       require("cmdline.config.highlights").setup()
+      local nui = package.loaded["cmdline.util.nui"]
+      if nui then
+        nui.check_bg()
+      end
     end,
   })
-
-  M._running = true
 end
 
 return M

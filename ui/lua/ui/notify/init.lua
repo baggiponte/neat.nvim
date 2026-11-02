@@ -22,6 +22,7 @@ local defaults = {
 }
 
 local config = defaults ---@type ui.notify.Config
+local original ---@type fun(msg: string, level?: integer, opts?: table)?
 local spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
 
 local function spin()
@@ -125,6 +126,17 @@ local function on_lsp_progress(ev)
   })
 end
 
+--- The active options (read by the health check).
+---@return ui.notify.Config
+function M.get_config()
+  return config
+end
+
+--- The `vim.notify` that was there before setup(), if setup() ran.
+function M.original()
+  return original
+end
+
 --- Open the notification history of the active backend.
 function M.history()
   if config.backend == "snacks" then
@@ -139,11 +151,23 @@ end
 ---@param opts? ui.notify.Config
 function M.setup(opts)
   config = vim.tbl_deep_extend("force", defaults, opts or {})
-  assert(renderers[config.backend], "ui.notify: unknown backend " .. tostring(config.backend))
+  vim.validate("notify.backend", config.backend, function(v)
+    return renderers[v] ~= nil
+  end, false, '"snacks", "native" or "nvim-notify"')
+  vim.validate("notify.lsp_progress", config.lsp_progress, "boolean")
+  vim.validate("notify.snacks", config.snacks, "table")
+  vim.validate("notify.nvim_notify", config.nvim_notify, "table")
 
-  if config.backend == "snacks" then
+  original = original or vim.notify
+  if config.backend == "native" then
+    vim.notify = original
+  elseif config.backend == "snacks" then
     require("ui.util").config.notifier = config.snacks
-    vim.notify = require("ui.notify.notifier").notify
+    -- Load the notifier (about 1,600 lines with its window code) on the first message.
+    vim.notify = function(...)
+      vim.notify = require("ui.notify.notifier").notify
+      return vim.notify(...)
+    end
   elseif config.backend == "nvim-notify" then
     local notify = require("notify")
     notify.setup(config.nvim_notify)
@@ -157,9 +181,14 @@ function M.setup(opts)
       group = vim.api.nvim_create_augroup("ui.notify.lsp_progress", { clear = true }),
       callback = on_lsp_progress,
     })
+  else
+    pcall(vim.api.nvim_del_augroup_by_name, "ui.notify.lsp_progress")
   end
 
-  vim.api.nvim_create_user_command("UiNotifications", M.history, { desc = "Notification history" })
+  vim.api.nvim_create_user_command("UiNotifications", function()
+    vim.deprecate(":UiNotifications", ":Ui notifications", "1.0", "ui.nvim", false)
+    M.history()
+  end, { desc = "Notification history (deprecated: use :Ui notifications)" })
 end
 
 return M

@@ -16,16 +16,62 @@ local defaults = {
   blink = {},
 }
 
+---@type "snacks"|"blink"|nil the active backend, nil before setup()
+M.backend = nil
+
+local function enable_snacks()
+  require("ui.indent.snacks").enable()
+end
+
 ---@param opts? ui.indent.Config
 function M.setup(opts)
   local config = vim.tbl_deep_extend("force", defaults, opts or {})
+  vim.validate("indent.backend", config.backend, function(v)
+    return v == "snacks" or v == "blink"
+  end, false, '"snacks" or "blink"')
+  vim.validate("indent.snacks", config.snacks, "table")
+  vim.validate("indent.blink", config.blink, "table")
+  M.backend = config.backend
+
+  -- calling setup() again applies the new options
+  local snacks = package.loaded["ui.indent.snacks"]
+  if snacks and snacks.enabled then
+    snacks.disable()
+  end
+  pcall(vim.api.nvim_del_augroup_by_name, "ui_indent_load")
+
   if config.backend == "snacks" then
     require("ui.util").config.indent = config.snacks
-    require("ui.indent.snacks").enable()
-  elseif config.backend == "blink" then
-    require("blink.indent").setup(config.blink)
+    if snacks or vim.v.vim_did_enter == 1 then
+      enable_snacks()
+    else
+      -- Load the engine (about 1,100 lines) with the first file buffer, not at startup.
+      vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
+        group = vim.api.nvim_create_augroup("ui_indent_load", { clear = true }),
+        once = true,
+        callback = enable_snacks,
+      })
+    end
   else
-    error("ui.indent: unknown backend " .. tostring(config.backend))
+    require("blink.indent").setup(config.blink)
+  end
+end
+
+--- Turn the snacks indent guides on or off (`:Ui indent on|off|toggle`).
+---@param on? boolean nil toggles
+function M.set(on)
+  if M.backend ~= "snacks" then
+    vim.notify("ui.nvim: `:Ui indent` controls the snacks backend only", vim.log.levels.WARN)
+    return
+  end
+  local snacks = require("ui.indent.snacks")
+  if on == nil then
+    on = not snacks.enabled
+  end
+  if on then
+    snacks.enable()
+  else
+    snacks.disable()
   end
 end
 

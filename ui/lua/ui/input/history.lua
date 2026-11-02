@@ -4,7 +4,7 @@
 -- Changes: merged the persistent key/value store and the history cursor into one module;
 -- history file moved from `stdpath("data")/snacks/` to `stdpath("data")/ui/`.
 
-local uv = vim.uv or vim.loop
+local uv = vim.uv
 
 ---@class ui.KeyValue
 local KV = {}

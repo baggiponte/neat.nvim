@@ -9,15 +9,12 @@ local M = {}
 
 M.transparent = false
 
-local function check_bg()
+-- Re-run on ColorScheme by cmdline.config (no autocmds at require time).
+function M.check_bg()
   local normal = vim.api.nvim_get_hl(0, { name = "Normal" })
   M.transparent = not (normal and normal.bg ~= nil)
 end
-check_bg()
-vim.api.nvim_create_autocmd("ColorScheme", {
-  group = vim.api.nvim_create_augroup("noice_transparent", { clear = true }),
-  callback = check_bg,
-})
+M.check_bg()
 
 ---@param opts? NoiceNuiOptions
 ---@return _.NoiceNuiOptions

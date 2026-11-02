@@ -13,7 +13,7 @@ M._attached = false
 
 local queue = {}
 
-local timer = (vim.uv or vim.loop).new_timer()
+local timer = vim.uv.new_timer()
 local processing = false
 
 function M.process_queue()

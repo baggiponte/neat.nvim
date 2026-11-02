@@ -108,6 +108,9 @@ end))
 ---@param opts? ui.select.Config
 function M.setup(opts)
   config = vim.tbl_deep_extend("force", defaults, opts or {})
+  vim.validate("select.trim_prompt", config.trim_prompt, "boolean")
+  vim.validate("select.telescope", config.telescope, "table", true)
+  vim.validate("select.format_item_override", config.format_item_override, "table")
   original = original or vim.ui.select
   vim.ui.select = M.select
 end

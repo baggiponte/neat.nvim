@@ -14,7 +14,7 @@ local M = setmetatable({}, {
   end,
 })
 
-local uv = vim.uv or vim.loop
+local uv = vim.uv
 
 --- Render styles:
 --- * compact: use border for icon and title

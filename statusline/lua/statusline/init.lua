@@ -1,4 +1,4 @@
--- statusline.nvim: a small, cached statusline for Neovim >= 0.11.
+-- statusline.nvim: a small, cached statusline for Neovim >= 0.12.
 local api = vim.api
 
 local M = {}
@@ -210,9 +210,42 @@ end
 
 -- setup -----------------------------------------------------------------------
 
----@param opts? table see statusline.config
+local STATUSLINE = "%!v:lua.require'statusline'.render()"
+
+--- True once setup() ran (plugin/statusline.lua then leaves it alone).
+M.did_setup = false
+
+--- The options setup() got (read by the health check).
+---@type statusline.Config
+M.user_options = {}
+
+---@param c statusline.Config
+local function validate(c)
+  vim.validate('palette', c.palette, 'table')
+  vim.validate('colors', c.colors, 'table')
+  vim.validate('colors.modes', c.colors.modes, 'table')
+  vim.validate('icons', c.icons, 'table')
+  vim.validate('lsp_scope', c.lsp_scope, function(v)
+    return v == 'all' or v == 'buffer'
+  end, false, "'all' or 'buffer'")
+  vim.validate('diagnostics_update_in_insert', c.diagnostics_update_in_insert, 'boolean')
+  vim.validate('sections', c.sections, 'table')
+  vim.validate('inactive_sections', c.inactive_sections, 'table')
+  vim.validate('extensions', c.extensions, 'table')
+end
+
+--- Configure and draw the statusline. plugin/statusline.lua calls it at
+--- startup with `vim.g.statusline` unless init.lua already did.
+---@param opts? statusline.Config defaults to `vim.g.statusline`
 function M.setup(opts)
+  if opts == nil then
+    opts = vim.g.statusline
+    if type(opts) == 'function' then
+      opts = opts()
+    end
+  end
   opts = opts or {}
+  vim.validate('opts', opts, 'table')
   cfg = vim.tbl_deep_extend('force', vim.deepcopy(config.defaults), opts)
   -- section lists replace rather than merge index-wise
   if opts.sections then
@@ -221,6 +254,9 @@ function M.setup(opts)
   if opts.inactive_sections then
     cfg.inactive_sections = opts.inactive_sections
   end
+  validate(cfg)
+  M.did_setup = true
+  M.user_options = opts
   ctx.cfg = cfg
   M.config = cfg
 
@@ -237,16 +273,59 @@ function M.setup(opts)
     end
   end
 
+  M.enable()
+end
+
+--- Whether the statusline is drawn by statusline.nvim right now.
+---@return boolean
+function M.is_enabled()
+  return vim.go.statusline == STATUSLINE
+end
+
+local saved ---@type {statusline: string, qf_disable_statusline: any}?
+
+function M.enable()
+  if not M.did_setup then
+    return M.setup()
+  end
+  if not M.is_enabled() then
+    saved = { statusline = vim.go.statusline, qf_disable_statusline = vim.g.qf_disable_statusline }
+  end
+  -- the quickfix ftplugin would set its own window-local statusline; we draw the qf extension
   vim.g.qf_disable_statusline = true
   autocmds()
 
-  vim.go.statusline = "%!v:lua.require'statusline'.render()"
+  vim.go.statusline = STATUSLINE
   -- drop window-local statuslines set before we loaded (e.g. by ftplugins)
   for _, win in ipairs(api.nvim_list_wins()) do
     if vim.wo[win].statusline ~= '' then
       api.nvim_set_option_value('statusline', '', { scope = 'local', win = win })
     end
   end
+  redraw()
+end
+
+--- Hand the statusline back to what was there before enable().
+function M.disable()
+  if not M.is_enabled() then
+    return
+  end
+  pcall(api.nvim_del_augroup_by_name, 'statusline.nvim')
+  vim.go.statusline = saved and saved.statusline or ''
+  vim.g.qf_disable_statusline = saved and saved.qf_disable_statusline or nil
+  redraw()
+end
+
+--- Drop every cache and redraw.
+function M.refresh()
+  if not M.did_setup then
+    return
+  end
+  hl.apply(true)
+  cache.invalidate_file()
+  cache.invalidate_git(nil, true)
+  cache.invalidate_diagnostics()
+  cache.invalidate_lsp()
   redraw()
 end
 

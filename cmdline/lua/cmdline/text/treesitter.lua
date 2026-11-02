@@ -1,31 +1,23 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
--- Changes: module paths renamed from noice to cmdline.
+-- Changes: module paths renamed from noice to cmdline; Neovim 0.12 APIs only.
 local M = {}
 M.queries = {}
 
 function M.get_query(lang)
   if not M.queries[lang] then
-    ---@diagnostic disable-next-line: deprecated
-    M.queries[lang] = (vim.treesitter.query.get or vim.treesitter.query.get_query)(lang, "highlights")
+    M.queries[lang] = vim.treesitter.query.get(lang, "highlights")
   end
   return M.queries[lang]
 end
 
 function M.get_lang(ft)
-  return vim.treesitter.language.get_lang and vim.treesitter.language.get_lang(ft) or ft
+  return vim.treesitter.language.get_lang(ft) or ft
 end
 
 function M.has_lang(lang)
-  if vim.treesitter.language.get_lang then
-    lang = vim.treesitter.language.get_lang(lang) or lang
-    local ok, ret = pcall(vim.treesitter.language.add, lang)
-    if vim.fn.has("nvim-0.11") == 1 then
-      return ok and ret and true or false
-    end
-    return ok
-  end
-  ---@diagnostic disable-next-line: deprecated
-  return vim.treesitter.language.require_language(lang, nil, true)
+  lang = vim.treesitter.language.get_lang(lang) or lang
+  local ok, ret = pcall(vim.treesitter.language.add, lang)
+  return ok and ret and true or false
 end
 
 --- Highlights a region of the buffer with a given language

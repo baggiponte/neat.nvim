@@ -1,0 +1,71 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    name: smoke (${{ matrix.plugin }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: [cmdline, ui, statusline]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+      - name: Fetch nui.nvim
+        if: matrix.plugin == 'cmdline'
+        run: git clone --depth 1 https://github.com/MunifTanjim/nui.nvim deps/nui.nvim
+      - name: Run tests/smoke.lua
+        env:
+          SMOKE: ${{ matrix.plugin }}
+        run: |
+          nvim --version | head -1
+          nvim --headless --clean \
+            --cmd "set rtp^=$PWD/deps/nui.nvim" \
+            --cmd "set rtp^=$PWD/${{ matrix.plugin }}" \
+            -c 'luafile tests/smoke.lua'
+
+  stylua:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: [cmdline, ui, statusline]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: v2.6.0 # keep in step with .pre-commit-config.yaml
+          args: --check ${{ matrix.plugin }}/lua ${{ matrix.plugin }}/plugin
+
+  luals:
+    name: type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+      - name: Install lua-language-server
+        run: |
+          url=$(curl -fsSL https://api.github.com/repos/LuaLS/lua-language-server/releases/latest \
+            | jq -r '.assets[] | select(.name | endswith("linux-x64.tar.gz")) | .browser_download_url')
+          mkdir -p "$RUNNER_TEMP/luals"
+          curl -fsSL "$url" | tar xz -C "$RUNNER_TEMP/luals"
+          echo "$RUNNER_TEMP/luals/bin" >> "$GITHUB_PATH"
+      - name: Check (errors only)
+        run: |
+          export VIMRUNTIME=$(nvim --clean --headless -c 'lua io.write(vim.env.VIMRUNTIME)' -c q)
+          for p in cmdline ui statusline; do
+            echo "== $p"
+            lua-language-server --check "$PWD/$p" --configpath "$PWD/.luarc.json" --checklevel=Error
+          done

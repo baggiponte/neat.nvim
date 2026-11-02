@@ -71,7 +71,8 @@ function M.float()
     hide = false,
   })
   -- same colours as the cmdline popup
-  vim.wo[win].winhighlight = "Normal:NoiceCmdlinePopup,FloatBorder:NoiceCmdlinePopupBorder,FloatTitle:NoiceCmdlinePopupTitle"
+  vim.wo[win].winhighlight =
+    "Normal:NoiceCmdlinePopup,FloatBorder:NoiceCmdlinePopupBorder,FloatTitle:NoiceCmdlinePopupTitle"
 end
 
 local function patch()
@@ -112,6 +113,13 @@ function M.setup(opts)
       vim.schedule(M.float)
     end,
   })
+end
+
+--- Whether ui2's message module is patched right now.
+---@return boolean
+function M.is_patched()
+  local ui2 = get_ui2()
+  return ui2 ~= nil and ui2.msg[MARK] ~= nil
 end
 
 function M.restore()
