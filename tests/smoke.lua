@@ -108,6 +108,9 @@ function tests.statusline()
   check(loads == 1, "nvim-web-devicons is required once, after the draw")
   check(sl.render():find("@icon@", 1, true) ~= nil, "the file icon shows once devicons is loaded")
   vim.cmd("bwipeout!")
+  vim.bo.filetype = "neo-tree"
+  check(not sl.render():find(vim.fn.fnamemodify(vim.fn.getcwd(), ":~"), 1, true), "the neo-tree statusline is empty")
+  vim.bo.filetype = ""
   check(#health_errors() == 0, ":checkhealth neat has no errors")
 end
 

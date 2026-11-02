@@ -9,10 +9,6 @@ local c = require('neat.statusline.components')
 
 local M = {}
 
-local function short_cwd()
-  return c.escape(vim.fn.fnamemodify(vim.fn.getcwd(), ':~'))
-end
-
 local function is_loclist(ctx)
   return vim.fn.getloclist(ctx.win, { filewinid = 1 }).filewinid ~= 0
 end
@@ -33,9 +29,9 @@ M.builtin = {
     z = { 'location' },
   },
 
-  ['neo-tree'] = {
-    a = { short_cwd },
-  },
+  -- Empty: neo-tree already shows its root at the top of the tree, and the cwd
+  -- here read as a stray message line under the sidebar.
+  ['neo-tree'] = {},
 
   oil = {
     a = {
