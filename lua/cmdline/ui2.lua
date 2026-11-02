@@ -2,19 +2,33 @@
 --
 -- When ui2 and cmdline.nvim are both attached, every cmdline event is drawn
 -- twice: once in the centred popup and once in ui2's bottom "cmd" window.
--- This module hides ui2's cmdline handlers so that ui2 ignores cmdline events,
--- while every other ui2 feature (messages, :messages pager, showmode, showcmd,
+-- This module keeps ui2's bottom line empty while the popup is open, and
+-- every other ui2 feature (messages, :messages pager, showmode, showcmd,
 -- ruler, dialogs) keeps working.
 --
 -- ui2 looks up handlers with `M.cmd[event]`, and its message module reads
--- cmdline state from the same table (`ui.cmd.srow`, `ui.cmd.level`, ...). We
--- swap `ui2.cmd` for a proxy that forwards everything except the `cmdline_*`
--- handlers. This relies on a private, experimental Neovim module; if it
--- changes shape, we do nothing.
+-- cmdline state from the same table (`ui.cmd.level`, `ui.cmd.prompt`, ...).
+-- We swap `ui2.cmd` for a proxy:
+-- - `cmdline_show` still runs, but with empty content, so ui2 tracks the
+--   cmdline level and prompt (it hides showcmd/ruler and routes messages to
+--   its dialog window while a prompt is open) without drawing the text.
+--   confirm() prompts are the exception: ui2 draws them in full;
+-- - `cmdline_pos` and `cmdline_special_char` are dropped (the cursor stays
+--   in ui2's window for confirm(), which only waits for a key);
+-- - everything else, `cmdline_hide` and multi-line `cmdline_block_*`
+--   included, goes to ui2 unchanged.
+-- This relies on a private, experimental Neovim module; if it changes shape,
+-- we do nothing.
 
 local M = {}
 
 local MARK = "__cmdline_nvim_proxy"
+
+---@type table<string, true>
+local DROPPED = {
+  cmdline_pos = true,
+  cmdline_special_char = true,
+}
 
 ---@return table?
 local function get_ui2()
@@ -31,10 +45,22 @@ local function patch()
     return true
   end
   local real = ui2.cmd
+  if type(real.cmdline_show) ~= "function" then
+    return false
+  end
+  local function cmdline_show(content, pos, firstc, prompt, indent, level, hl_id)
+    if require("cmdline.ui.cmdline").is_confirm(prompt) then
+      return real.cmdline_show(content, pos, firstc, prompt, indent, level, hl_id)
+    end
+    real.cmdline_show({}, 0, "", "", 0, level, 0)
+    real.prompt = prompt ~= nil and #prompt > 0
+  end
   ui2.cmd = setmetatable({}, {
     [MARK] = real,
     __index = function(_, key)
-      if type(key) == "string" and key:find("^cmdline_") then
+      if key == "cmdline_show" then
+        return cmdline_show
+      elseif DROPPED[key] then
         return nil
       end
       return real[key]

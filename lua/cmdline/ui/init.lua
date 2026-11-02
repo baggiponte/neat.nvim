@@ -1,18 +1,15 @@
+-- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
+-- Changes: attaches to `ext_cmdline` only; messages and the popupmenu are left
+-- to Neovim (ui2 and the completion plugin). Updates go through cmdline.render.
 local require = require("cmdline.util.lazy")
 
+local Cmdline = require("cmdline.ui.cmdline")
 local Config = require("cmdline.config")
-local Manager = require("cmdline.message.manager")
-local Router = require("cmdline.message.router")
+local Render = require("cmdline.render")
 local Util = require("cmdline.util")
-
----@alias NoiceEvent MsgEvent|CmdlineEvent|NotifyEvent|LspEvent
----@alias NoiceKind MsgKind|NotifyLevel|LspKind
 
 local M = {}
 M._attached = false
-
----@type table<string, table|false>
-M._handlers = {}
 
 local queue = {}
 
@@ -29,85 +26,41 @@ function M.process_queue()
   processing = false
 end
 
-function M.setup()
-  local widgets = {
-    messages = "msg",
-    cmdline = "cmdline",
-    popupmenu = "popupmenu",
-  }
-
-  -- Check if we're running inside a GUI that already externalizes some widgets
-  ---@type table<string, boolean>
-  local ui_widgets = {}
-  local uis = vim.api.nvim_list_uis()
-  for _, ui in ipairs(uis) do
-    for ext, _ in pairs(widgets) do
-      if ui["ext_" .. ext] then
-        ui_widgets[ext] = true
-      end
-    end
-  end
-
-  M._handlers = {}
-
-  ---@type table<string, boolean>
-  local options = {}
-  for ext, widget in pairs(widgets) do
-    -- only enable if configured and not enabled in the GUI
-    if Config.options[ext].enabled and not ui_widgets[ext] then
-      options["ext_" .. ext] = true
-      M._handlers[widget] = _G.require("cmdline.ui." .. widget)
-    else
-      if ui_widgets[ext] and Config.options.debug then
-        Util.warn("Disabling ext_" .. ext)
-      end
-      M._handlers[widget] = false
-    end
-  end
-  return options
-end
-
 local stack_level = 0
-function M.ui_attach_cb(handler, event, kind, ...)
+function M.ui_attach_cb(handler, event, ...)
   if stack_level > 50 then
     return Util.panic("Event loop detected. Shutting down...")
   end
   stack_level = stack_level + 1
 
-  local tick = Manager.tick()
-  M.safe_handle(handler, event, kind, ...)
+  M.safe_handle(handler, event, ...)
 
-  -- check if we need to update the ui
-  if Manager.tick() > tick then
-    if
-      require("cmdline.util.ffi").textlock == 0
-      and Util.is_blocking()
-      and event ~= "msg_ruler"
-      and kind ~= "search_count"
-    then
-      Util.try(Router.update)
-    end
-  else
-    local widget = M.parse_event(event)
-    Util.stats.track(widget .. ".skipped")
+  -- redraw right away while Neovim blocks (e.g. in cmdline mode), otherwise
+  -- the throttled updater picks it up
+  if Render.is_dirty() and require("cmdline.util.ffi").textlock == 0 and Util.is_blocking() then
+    Util.try(Render.update)
   end
   stack_level = stack_level - 1
 end
 
-function M.enable()
-  local options = M.setup()
+---@return boolean
+local function gui_has_cmdline()
+  for _, ui in ipairs(vim.api.nvim_list_uis()) do
+    if ui.ext_cmdline then
+      return true
+    end
+  end
+  return false
+end
 
-  if vim.tbl_isempty(options) then
+function M.enable()
+  if gui_has_cmdline() then
     if Config.options.debug then
       vim.schedule(function()
-        Util.warn("No extensions enabled")
+        Util.warn("The GUI already draws the cmdline; cmdline.nvim stays off")
       end)
     end
     return
-  end
-
-  if options.ext_messages then
-    require("cmdline.ui.msg").setup()
   end
 
   M._attached = true
@@ -115,44 +68,32 @@ function M.enable()
   local schedule_process = vim.schedule_wrap(M.process_queue)
 
   ---@diagnostic disable-next-line: redundant-parameter
-  vim.ui_attach(Config.ns, options, function(event, kind, ...)
+  vim.ui_attach(Config.ns, { ext_cmdline = true }, function(event, ...)
     if Util.is_exiting() then
       return
     end
-    -- HACK: special case for return prompts
-    if event == "msg_show" and kind == "return_prompt" then
-      vim.api.nvim_input("<cr>")
-      return true
-    end
     if Config.options.debug then
-      Util.debug({ event = event, kind = kind, ... })
+      Util.debug({ event = event, ... })
     end
-    local handler = M.get_handler(event, kind, ...)
+    local handler = M.get_handler(event)
     if not handler then
       return
     end
-    table.insert(queue, vim.F.pack_len(handler, event, kind, ...))
+    table.insert(queue, vim.F.pack_len(handler, event, ...))
     if vim.in_fast_event() then
       timer:start(0, 0, schedule_process)
     elseif not processing then
       M.process_queue()
     end
-    -- make sure only Noice handles these events
     return true
   end)
 
   vim.api.nvim_create_autocmd("SwapExists", {
-    group = vim.api.nvim_create_augroup("noice-swap-exists", { clear = true }),
+    group = vim.api.nvim_create_augroup("cmdline.swap_exists", { clear = true }),
     callback = function()
-      Util.try(Router.update)
+      Util.try(Render.update)
     end,
   })
-end
-
-function M.redirect()
-  M.disable()
-  Router.echo_pending()
-  vim.schedule(M.enable)
 end
 
 function M.disable()
@@ -162,49 +103,12 @@ function M.disable()
   end
 end
 
----@return string, string
-function M.parse_event(event)
-  return event:match("([a-z]+)_(.*)")
-end
-
 ---@param event string
-function M.get_handler(event, ...)
-  local event_group, event_type = event:match("([a-z]+)_(.*)")
-  local on = "on_" .. event_type
-
-  local handler = M._handlers[event_group]
-
-  -- false means this is a disabled handler
-  if handler == false then
-    return
-  end
-
-  if not handler then
-    if Config.options.debug then
-      vim.schedule(function()
-        Util.error_once("No ui router for " .. event_group)
-      end)
-    end
-    return
-  end
-
-  if type(handler[on]) ~= "function" then
-    local args = { ... }
-    if Config.options.debug then
-      vim.schedule(function()
-        Util.error_once(
-          "No ui router for **"
-            .. event
-            .. "** events\n```lua\n"
-            .. vim.inspect({ group = event_group, on = on, args = args })
-            .. "\n```"
-        )
-      end)
-    end
-    return
-  end
-
-  return handler[on]
+---@return fun(event: string, ...)?
+function M.get_handler(event)
+  local event_type = event:match("^cmdline_(.*)$")
+  local handler = event_type and Cmdline["on_" .. event_type]
+  return type(handler) == "function" and handler or nil
 end
 
 ---@param handler fun(...)

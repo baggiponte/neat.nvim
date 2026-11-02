@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cmdline.nvim review</title>
+<style>
+:root{--bg:#f7f8fa;--card:#fff;--ink:#1f2937;--mute:#6b7280;--line:#e5e7eb;--blue:#2563eb;--yes:#16a34a;--no:#dc2626;--chg:#d97706;--code:#f3f4f6}
+@media (prefers-color-scheme:dark){:root{--bg:#111318;--card:#1a1d24;--ink:#e5e7eb;--mute:#9ca3af;--line:#2d323c;--code:#252a33}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+header.top{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:16px;margin:0}
+.prog{display:flex;align-items:center;gap:8px;color:var(--mute)}
+.bar{width:160px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--blue);width:0}
+#saveState{margin-left:auto;font-size:13px;color:var(--mute)}#saveState.ok{color:var(--yes)}#saveState.err{color:var(--no)}
+main{max-width:1280px;margin:0 auto;padding:16px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:18px}
+h2{font-size:17px;margin:0 0 6px}
+.mute{color:var(--mute)}
+code{background:var(--code);padding:1px 4px;border-radius:4px;font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:var(--code);padding:8px 10px;border-radius:6px;overflow-x:auto;font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0}
+@media(max-width:800px){.pair{grid-template-columns:1fr}}
+figure{margin:0}figure img,figure video{width:100%;border:1px solid var(--line);border-radius:6px;display:block;background:#1d1f21}
+figcaption{font-size:12.5px;color:var(--mute);margin-bottom:4px;font-weight:600}
+.dec{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.dec button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:13px}
+.dec button.on[data-d=yes]{background:var(--yes);border-color:var(--yes);color:#fff}
+.dec button.on[data-d=no]{background:var(--no);border-color:var(--no);color:#fff}
+.dec button.on[data-d=changes]{background:var(--chg);border-color:var(--chg);color:#fff}
+textarea{width:100%;min-height:54px;margin-top:8px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;background:var(--card);color:var(--ink)}
+.diff{border-left:3px solid var(--chg);padding:2px 10px;margin:6px 0}
+.same{border-left:3px solid var(--yes);padding:2px 10px;margin:6px 0}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>cmdline.nvim review</h1>
+  <div class="prog"><div class="bar"><i id="barFill"></i></div><span id="progText"></span></div>
+  <span id="saveState">loading…</span>
+</header>
+<main>
+<section>
+  <h2>What this is</h2>
+  <p>noice.nvim is replaced by <code>~/dev/projs/cmdline.nvim</code>: noice's centred cmdline popup, trimmed from 6,125 to about 3,300 lines. Messages, <code>:messages</code>, errors and <code>confirm()</code> now go to Neovim 0.12's ui2 instead of noice and the snacks notifier. nui.nvim stays as a dependency.</p>
+  <p>Top of each pair is today's config (<code>nvim</code>), bottom is the variant (<code>nvim-cmdline</code>), recorded from the same vhs tape. Try it yourself:</p>
+  <pre>~/dev/projs/cmdline.nvim/review/nvim-review cmdline     # variant
+nvim                                                  # today</pre>
+  <p class="mute">Decisions save to <code>review/feedback.json</code> as you click.</p>
+</section>
+<div id="items"></div>
+<section>
+  <h2>Overall</h2>
+  <textarea id="overall" placeholder="Anything else?"></textarea>
+</section>
+</main>
+<script>
+const ITEMS = [
+  {id:"whole-demo", title:"The whole demo", kind:"video", frame:"demo.mp4",
+   body:`<p>The full run: <code>:</code> with completion, <code>:lua</code>, <code>/</code> and <code>?</code>, <code>:!ls</code>, <code>:echo</code>, an error, <code>input()</code>, <code>:messages</code> and a long command.</p>`},
+  {id:"popup-colon", title:"Popup for :", frame:"01-colon.png",
+   body:`<p class="same">Same position, size, border, title and icon.</p><p class="diff">Today the command is also echoed on the bottom line (noice and ui2 both draw it). The variant keeps that line empty.</p>`},
+  {id:"completion", title:"blink.cmp completion under the popup", frame:"02-completion.png",
+   body:`<p class="same">blink.cmp still anchors its menu under the popup. noice's own popupmenu was not used today (blink draws the cmdline menu), so dropping it changes nothing.</p>`},
+  {id:"lua", title:":lua with Lua highlighting", frame:"03-lua.png",
+   body:`<p class="same">Title, icon and Treesitter highlighting are the same.</p>`},
+  {id:"lua-result", title:"Output of :lua print goes to ui2", frame:"04-lua-result.png",
+   body:`<p class="diff">Today the output shows on the bottom line and again as a "Messages" toast (noice → snacks notifier). In the variant it shows only on the bottom line, through ui2.</p>`},
+  {id:"search", title:"/ search", frame:"05-search.png",
+   body:`<p class="same">Search title, yellow border and icons are the same.</p><p class="diff">The "Messages" toast in today's frame is the previous <code>:lua</code> output still on screen; the variant has no toasts.</p>`},
+  {id:"search-up", title:"? search", frame:"06-search-up.png", body:`<p class="same">Same as today.</p>`},
+  {id:"filter", title:":! shell command", frame:"07-filter.png",
+   body:`<p class="same">"Filter" title and <code>$</code> icon are the same.</p>`},
+  {id:"filter-output", title:"Output of :!ls", frame:"08-filter-output.png",
+   body:`<p class="same">Shell output shows on ui2's expanded bottom area in both.</p>`},
+  {id:"echo", title:":echo", frame:"09-echo.png",
+   body:`<p class="same">"hello from the cmdline" shows on the bottom line in both.</p><p class="diff">Today the <code>:echo</code> command itself also stays on the line under it.</p>`},
+  {id:"error", title:"An error (E117)", frame:"10-error.png",
+   body:`<p class="same">Same red E117 message, drawn by ui2 in both.</p><p class="diff">Today the failed command (<code>:call NoSuchFunction()</code>) also stays on the bottom line under the error.</p>`},
+  {id:"input", title:"input() prompt", frame:"11-input.png",
+   body:`<p class="same">Prompt becomes the popup title, with the input icon, as today.</p><p class="diff">Today the prompt is also echoed on the bottom line.</p>`},
+  {id:"messages", title:":messages", frame:"12-messages.png",
+   body:`<p class="diff">Today <code>:messages</code> opens noice's history split above the statusline. In the variant it is ui2's pager at the bottom of the screen, listing the same history (the <code>:lua</code> output and the E117 error); <code>q</code> closes it and <code>g&lt;</code> reopens the last output.</p>`},
+  {id:"long", title:"Long command", frame:"13-long.png",
+   body:`<p class="same">The popup grows to fit and scrolls the same way.</p>`},
+  {id:"confirm", title:"confirm() and :s///c prompts", kind:"text",
+   body:`<p class="diff">Today <code>confirm()</code> opens noice's "Confirm" popup near the top with the buttons centred. In the variant ui2 draws it on the bottom line, like Neovim without plugins:</p>
+<pre>Save changes?
+[Y]es, (N)o:</pre>
+<p><code>:%s/x/y/gc</code> looks the same as today (bottom line). Try both with <code>nvim-review cmdline</code>. Say "Needs changes" if you want the centred Confirm popup back; it would be another ~60 lines copied from noice.</p>`},
+];
+
+const state = {updated:null, overall_comment:"", items:ITEMS.map(i=>({id:i.id,title:i.title,section:"cmdline.nvim",decision:null,comment:""}))};
+const byId = id => state.items.find(x=>x.id===id);
+const esc = s => s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  const root=document.getElementById("items");
+  root.innerHTML="";
+  for(const it of ITEMS){
+    const s=document.createElement("section");
+    let media="";
+    if(it.kind==="video"){
+      media=`<div class="pair"><figure><figcaption>Today (noice)</figcaption><video src="demo/baseline/${it.frame}" controls muted loop playsinline></video></figure><figure><figcaption>cmdline.nvim</figcaption><video src="demo/cmdline/${it.frame}" controls muted loop playsinline></video></figure></div>`;
+    }else if(it.frame){
+      media=`<div class="pair"><figure><figcaption>Today (noice)</figcaption><img loading="lazy" src="demo/baseline/frames/${it.frame}" alt="today: ${esc(it.title)}"></figure><figure><figcaption>cmdline.nvim</figcaption><img loading="lazy" src="demo/cmdline/frames/${it.frame}" alt="cmdline.nvim: ${esc(it.title)}"></figure></div>`;
+    }
+    const st=byId(it.id);
+    s.innerHTML=`<h2>${esc(it.title)}</h2>${it.body}${media}
+      <div class="dec">${[["yes","Yes"],["no","No"],["changes","Needs changes"]].map(([d,l])=>`<button data-d="${d}" class="${st.decision===d?"on":""}">${l}</button>`).join("")}</div>
+      <textarea placeholder="Comment">${esc(st.comment)}</textarea>`;
+    s.querySelectorAll(".dec button").forEach(b=>b.onclick=()=>{
+      st.decision = st.decision===b.dataset.d ? null : b.dataset.d;
+      s.querySelectorAll(".dec button").forEach(x=>x.classList.toggle("on", x.dataset.d===st.decision));
+      save();
+    });
+    s.querySelector("textarea").oninput=e=>{st.comment=e.target.value; saveSoon();};
+    root.appendChild(s);
+  }
+  document.getElementById("overall").value=state.overall_comment;
+  progress();
+}
+function progress(){
+  const done=state.items.filter(i=>i.decision).length;
+  document.getElementById("barFill").style.width=(100*done/state.items.length)+"%";
+  document.getElementById("progText").textContent=`${done}/${state.items.length} decided`;
+}
+let timer=null;
+function saveSoon(){clearTimeout(timer); timer=setTimeout(save,600);}
+async function save(){
+  progress();
+  state.updated=new Date().toISOString();
+  const el=document.getElementById("saveState");
+  try{
+    const r=await fetch("feedback.json",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(state)});
+    if(!r.ok) throw new Error(r.status);
+    el.textContent="saved "+new Date().toLocaleTimeString(); el.className="ok";
+  }catch(e){el.textContent="not saved ("+e.message+")"; el.className="err";}
+}
+document.getElementById("overall").oninput=e=>{state.overall_comment=e.target.value; saveSoon();};
+(async()=>{
+  try{
+    const r=await fetch("feedback.json");
+    if(r.ok){
+      const saved=await r.json();
+      state.overall_comment=saved.overall_comment||"";
+      for(const it of saved.items||[]){const st=byId(it.id); if(st){st.decision=it.decision; st.comment=it.comment||"";}}
+    }
+    document.getElementById("saveState").textContent="ready";
+  }catch(e){document.getElementById("saveState").textContent="offline: open through review/launch.sh";}
+  render();
+})();
+</script>
+</body>
+</html>

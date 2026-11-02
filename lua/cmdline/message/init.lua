@@ -1,7 +1,8 @@
+-- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
+-- Changes: no message filters.
 local require = require("cmdline.util.lazy")
 
 local Block = require("cmdline.text.block")
-local Filter = require("cmdline.message.filter")
 
 local _id = 0
 
@@ -118,7 +119,5 @@ function Message:render(bufnr, ns_id, linenr_start, linenr_end)
   self:_add_buf(bufnr)
   return Message.super.render(self, bufnr, ns_id, linenr_start, linenr_end)
 end
-
-Message.is = Filter.is
 
 return Message

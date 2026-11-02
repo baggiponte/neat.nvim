@@ -1,3 +1,5 @@
+-- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
+-- Changes: module paths renamed from noice to cmdline.
 local require = require("cmdline.util.lazy")
 
 local Config = require("cmdline.config")
@@ -42,7 +44,7 @@ end
 function M.protect(fn, opts)
   if not fn then
     local trace = debug.traceback()
-    Util.panic("nil passed to noice.util.call.protect. This should not happen.\n%s", trace)
+    Util.panic("nil passed to cmdline.util.call.protect. This should not happen.\n%s", trace)
   end
   local self = setmetatable({}, M)
   self._opts = vim.tbl_deep_extend("force", defaults, opts or {})
@@ -56,7 +58,7 @@ end
 function M:on_error(err)
   M._errors = M._errors + 1
   if M._errors > M._max_errors then
-    Util.panic("Too many errors. Disabling Noice")
+    Util.panic("Too many errors. Disabling cmdline.nvim")
   end
   M.reset()
 

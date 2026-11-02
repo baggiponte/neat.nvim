@@ -1,3 +1,6 @@
+-- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
+-- Changes: formats are looked up directly by cmdline.render instead of
+-- being turned into routes.
 local require = require("cmdline.util.lazy")
 
 local Config = require("cmdline.config")
@@ -46,12 +49,6 @@ function M.setup()
         },
       }, { opts = vim.deepcopy(Config.options.cmdline.opts) }, format)
       formats[name] = format
-
-      table.insert(Config.options.routes, {
-        view = format.view,
-        opts = format.opts,
-        filter = { event = "cmdline", kind = name },
-      })
     end
   end
 end

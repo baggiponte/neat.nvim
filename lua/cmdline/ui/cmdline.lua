@@ -1,11 +1,13 @@
+-- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
+-- Changes: renders through cmdline.render instead of the message manager;
+-- confirm() prompts are left to ui2; no pre-0.11 cursor and redraw hacks.
 local require = require("cmdline.util.lazy")
 
 local Config = require("cmdline.config")
-local Hacks = require("cmdline.util.hacks")
-local Manager = require("cmdline.message.manager")
 local Message = require("cmdline.message")
 local NoiceText = require("cmdline.text")
 local Object = require("nui.object")
+local Render = require("cmdline.render")
 
 local M = {}
 M.message = Message("cmdline", nil)
@@ -24,14 +26,6 @@ M.events = {
 
 ---@type NoiceCmdline?
 M.active = nil
-M.real_cursor = vim.api.nvim__redraw ~= nil
-
---Neovim > 0.11 handles confirm messages in two steps
--- 1. msg_show.confirm with the message
--- 2. cmdline_show with Yes/No/Cancel
-M.handle_confirm = vim.fn.has("nvim-0.11") == 1
-M.confirm_message = nil ---@type NoiceMessage?
-M._on_hide = nil ---@type fun()
 
 ---@alias NoiceCmdlineFormatter fun(cmdline: NoiceCmdline): {icon?:string, offset?:number, view?:NoiceViewOptions}
 
@@ -117,8 +111,8 @@ function Cmdline:get_format()
 end
 
 ---@param message NoiceMessage
----@param text_only? boolean
-function Cmdline:format(message, text_only)
+---@return CmdlineFormat
+function Cmdline:format(message)
   local format = self:get_format()
   message.fix_cr = false
   message.title = nil
@@ -133,9 +127,7 @@ function Cmdline:format(message, text_only)
     message:append(" ")
   end
 
-  if not text_only then
-    message.kind = format.name
-  end
+  message.kind = format.name
 
   if self.state.prompt ~= "" then
     if use_input then
@@ -157,12 +149,12 @@ function Cmdline:format(message, text_only)
     message:append(NoiceText.syntax(format.lang, 1, -vim.fn.strlen(cmd)))
   end
 
-  if not text_only then
-    local cursor = NoiceText.cursor(-self:length() + self.state.pos)
-    cursor.on_render = M.on_render
-    cursor.enabled = not M.real_cursor
-    message:append(cursor)
-  end
+  -- invisible cursor marker: its position drives the real cursor in the popup
+  local cursor = NoiceText.cursor(-self:length() + self.state.pos)
+  cursor.on_render = M.on_render
+  cursor.enabled = false
+  message:append(cursor)
+  return format
 end
 
 function Cmdline:width()
@@ -175,9 +167,19 @@ end
 
 ---@type NoiceCmdline[]
 M.cmdlines = {}
-M.skipped = false
+
+-- confirm() and `:s///c` ask for a choice through the cmdline, with prompts
+-- such as "[Y]es, (N)o: " or "replace with x? (y)es/(n)o/...". Like other
+-- messages, ui2 draws those dialogs.
+---@param prompt? string
+function M.is_confirm(prompt)
+  return prompt ~= nil and prompt:find("[%(%[]%w[%)%]]%w") ~= nil
+end
 
 function M.on_show(event, content, pos, firstc, prompt, indent, level)
+  if M.is_confirm(prompt) then
+    return
+  end
   local c = Cmdline({
     event = event,
     content = content,
@@ -188,26 +190,6 @@ function M.on_show(event, content, pos, firstc, prompt, indent, level)
     level = level,
   })
 
-  if M.confirm_message then
-    local message = M.confirm_message --[[@as NoiceMessage]]
-    message:append(prompt)
-    M.confirm_message = nil
-    Manager.add(message)
-    M._on_hide = function()
-      vim.schedule(function()
-        Manager.remove(message)
-      end)
-    end
-    return
-  end
-
-  -- This was triggered by a force redraw, so skip it
-  if c:get():find(Hacks.SPECIAL, 1, true) then
-    M.skipped = true
-    return
-  end
-  M.skipped = false
-
   local last = M.cmdlines[level] and M.cmdlines[level].state
   if not vim.deep_equal(c.state, last) then
     M.active = c
@@ -217,10 +199,6 @@ function M.on_show(event, content, pos, firstc, prompt, indent, level)
 end
 
 function M.on_hide(_, level)
-  if M._on_hide then
-    M._on_hide()
-    M._on_hide = nil
-  end
   if M.cmdlines[level] then
     M.cmdlines[level] = nil
     local active = M.active
@@ -234,9 +212,6 @@ function M.on_hide(_, level)
 end
 
 function M.on_pos(_, pos, level)
-  if M.skipped then
-    return
-  end
   local c = M.cmdlines[level]
   if c and c.state.pos ~= pos then
     M.cmdlines[level].state.pos = pos
@@ -254,7 +229,7 @@ M.position = nil
 
 function M.fix_cursor()
   local win = M.win()
-  if not win or not M.real_cursor then
+  if not win then
     return
   end
   vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(M.position.buf), M.position.cursor })
@@ -273,8 +248,6 @@ function M.on_render(_, buf, line, byte)
   if win == -1 then
     return
   end
-
-  Hacks.cmdline_force_redraw()
 
   local cmdline_start = byte - (M.last():length() - M.last().offset)
   local cursor = byte - M.last():length() + M.last().state.pos
@@ -305,30 +278,14 @@ function M.last()
   return M.cmdlines[last]
 end
 
----@param message NoiceMessage
-function M.on_confirm(message)
-  if not M.handle_confirm then
-    return false
-  end
-  M.confirm_message = message
-  return true
-end
-
 function M.update()
   M.message:clear()
   local cmdline = M.last()
 
   if cmdline then
-    cmdline:format(M.message)
-    if not M.real_cursor then
-      Hacks.hide_cursor()
-    end
-    Manager.add(M.message)
+    Render.set(M.message, cmdline:format(M.message))
   else
-    Manager.remove(M.message)
-    if not M.real_cursor then
-      Hacks.show_cursor()
-    end
+    Render.set(nil)
   end
 end
 

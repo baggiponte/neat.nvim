@@ -1,3 +1,5 @@
+-- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
+-- Changes: no debug formatter.
 local require = require("cmdline.util.lazy")
 
 local Config = require("cmdline.config")
@@ -83,11 +85,7 @@ function M.format(message, format, opts)
   end
 
   -- use existing message, with a separate _lines array
-  local ret = setmetatable({ _lines = {}, _debug = false }, { __index = message })
-  if Config.options.debug and not message._debug then
-    table.insert(format, 1, "{debug}")
-    ret._debug = true
-  end
+  local ret = setmetatable({ _lines = {} }, { __index = message })
 
   for _, entry in ipairs(format) do
     entry = M.parse_entry(entry)

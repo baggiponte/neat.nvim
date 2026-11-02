@@ -1,3 +1,5 @@
+-- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
+-- Changes: module paths renamed from noice to cmdline.
 return function(module)
   local mod = nil
 
