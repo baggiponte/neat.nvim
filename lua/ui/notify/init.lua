@@ -44,7 +44,7 @@ function renderers.snacks(p)
     id = p.id,
     title = p.title,
     opts = function(notif)
-      notif.icon = p.done and " " or spin()
+      notif.icon = p.done and " " or spin()
     end,
   })
 end
@@ -54,7 +54,7 @@ renderers["nvim-notify"] = function(p)
   local prev = records[p.id]
   records[p.id] = require("notify")(p.msg, vim.log.levels.INFO, {
     title = p.title,
-    icon = p.done and " " or spin(),
+    icon = p.done and " " or spin(),
     replace = prev,
     hide_from_history = not p.done,
     timeout = p.done and 3000 or false,

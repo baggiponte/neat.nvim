@@ -6,6 +6,7 @@
 #   ui-a: notify = snacks toasts,          indent = snacks
 #   ui-b: notify = native progress + ui2,  indent = blink.indent
 #   ui-c: notify = nvim-notify,            indent = snacks
+#   ui:   the picks from the review: notify = snacks toasts, indent = blink.indent
 set -euo pipefail
 
 src_cfg="$HOME/.config/nvim"
@@ -18,8 +19,8 @@ rm -rf "$HOME/.config/nvim-ui-base"
 cp -R "$src_cfg" "$HOME/.config/nvim-ui-base"
 [[ -d "$HOME/.local/share/nvim-ui-base" ]] || cp -cR "$src_data" "$HOME/.local/share/nvim-ui-base"
 
-for v in a b c; do
-  name="nvim-ui-$v"
+for v in a b c pick; do
+  if [[ $v == pick ]]; then name="nvim-ui"; overlay="ui"; else name="nvim-ui-$v"; overlay="ui-$v"; fi
   cfg="$HOME/.config/$name"
   data="$HOME/.local/share/$name"
 
@@ -31,7 +32,7 @@ for v in a b c; do
 
   # The old plugins go; ui.nvim comes in from the local checkout.
   rm "$cfg/lua/baggiponte/plugins/ui/snacks.lua" "$cfg/lua/baggiponte/plugins/ui/dressing.lua"
-  cp "$repo/review/overlay/ui-$v.lua" "$cfg/lua/baggiponte/plugins/ui/ui.lua"
+  cp "$repo/review/overlay/$overlay.lua" "$cfg/lua/baggiponte/plugins/ui/ui.lua"
 
   # neo-tree: Snacks.rename -> ui.rename
   sed -i '' "s/Snacks\.rename\.on_rename_file/require('ui.rename').on_rename_file/" \
@@ -54,4 +55,4 @@ sed -i '' "s/callback = require('vim._core.ui2').enable })/callback = function()
   "$HOME/.config/nvim-ui-b/lua/baggiponte/options.lua"
 grep -q "progress = 'msg'" "$HOME/.config/nvim-ui-b/lua/baggiponte/options.lua"
 
-echo "built: nvim-ui-base nvim-ui-a nvim-ui-b nvim-ui-c"
+echo "built: nvim-ui-base nvim-ui-a nvim-ui-b nvim-ui-c nvim-ui"

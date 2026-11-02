@@ -4,7 +4,7 @@
 #   demo/record.sh ui-a       # one
 set -euo pipefail
 cd "$(dirname "$0")"
-targets=("${@:-ui-base ui-a ui-b ui-c}")
+targets=("${@:-ui-base ui-a ui-b ui-c ui}")
 for t in ${targets[@]}; do
   sed -e "s/@APPNAME@/nvim-$t/" -e "s/@OUT@/$t/" ui.tape.in > "$t.tape"
   timeout 300 vhs "$t.tape"
