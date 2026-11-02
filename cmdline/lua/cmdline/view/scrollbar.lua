@@ -46,7 +46,7 @@ function Scrollbar:init(opts)
 end
 
 function Scrollbar:mount()
-  self.augroup = vim.api.nvim_create_augroup("noice_scrollbar_" .. self.id, { clear = true })
+  self.augroup = vim.api.nvim_create_augroup("cmdline_scrollbar_" .. self.id, { clear = true })
   vim.api.nvim_create_autocmd("WinScrolled", {
     group = self.augroup,
     pattern = tostring(self.winnr),

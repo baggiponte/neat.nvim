@@ -13,7 +13,7 @@ history, popupmenu, notify/LSP integrations, commands and health checks are gone
 
 ## Requirements
 
-- Neovim 0.11+ (0.12 for ui2)
+- Neovim 0.12+
 - [nui.nvim](https://github.com/MunifTanjim/nui.nvim)
 
 ## Setup
@@ -28,6 +28,12 @@ vim.pack.add({
 })
 require('cmdline').setup({})
 ```
+
+cmdline.nvim takes over the cmdline UI, so it stays off until you call
+`setup()`. Instead of calling it, you can set `vim.g.cmdline` (a table of
+options, or a function returning one) before `vim.pack.add()`, and the plugin
+starts itself. Either way the popup loads after `VimEnter`, so it costs nothing
+at startup. Set `vim.g.loaded_cmdline = true` to turn the plugin off entirely.
 
 Enable ui2 as usual, early in your config:
 
@@ -89,8 +95,17 @@ Defaults, see `lua/cmdline/config/init.lua`:
 }
 ```
 
-`require('cmdline').disable()` and `require('cmdline').enable()` turn it off
-and on again.
+Options are checked with `vim.validate()` when the popup starts; misspelled
+keys show up in `:checkhealth cmdline`.
+
+## Commands and health
+
+`:Cmdline enable`, `:Cmdline disable` and `:Cmdline toggle` turn the popup on
+and off (also `require('cmdline').enable()`, `.disable()`, `.toggle()`).
+
+`:checkhealth cmdline` checks Neovim and nui.nvim, reports unknown options, and
+says whether each ui2 patch (cmdline handlers, pager float, confirm dialog)
+applied. If ui2's private modules change shape, this is where it shows.
 
 ## Highlights
 

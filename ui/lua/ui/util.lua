@@ -73,14 +73,22 @@ function M.styles()
 end
 
 local hl_groups = {} ---@type table<string, vim.api.keyset.highlight>
-vim.api.nvim_create_autocmd("ColorScheme", {
-  group = vim.api.nvim_create_augroup("ui_util_hl", { clear = true }),
-  callback = function()
-    for hl_group, hl in pairs(hl_groups) do
-      vim.api.nvim_set_hl(0, hl_group, hl)
-    end
-  end,
-})
+local hl_autocmd = false
+-- Created by the first set_hl() call, not when this module is required.
+local function watch_colorscheme()
+  if hl_autocmd then
+    return
+  end
+  hl_autocmd = true
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = vim.api.nvim_create_augroup("ui_util_hl", { clear = true }),
+    callback = function()
+      for hl_group, hl in pairs(hl_groups) do
+        vim.api.nvim_set_hl(0, hl_group, hl)
+      end
+    end,
+  })
+end
 
 local langs = {} ---@type table<string, boolean>
 
@@ -101,6 +109,7 @@ end
 ---@param opts? { prefix?:string, default?:boolean }
 function M.set_hl(groups, opts)
   opts = opts or {}
+  watch_colorscheme()
   for hl_group, hl in pairs(groups) do
     hl_group = opts.prefix and opts.prefix .. hl_group or hl_group
     hl = type(hl) == "string" and { link = hl } or hl --[[@as vim.api.keyset.highlight]]

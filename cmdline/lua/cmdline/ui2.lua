@@ -91,6 +91,14 @@ function M.setup(opts)
   })
 end
 
+--- Whether ui2's cmdline handlers are wrapped right now.
+---@return boolean
+function M.is_patched()
+  local ui2 = get_ui2()
+  local mt = type(ui2) == "table" and type(ui2.cmd) == "table" and getmetatable(ui2.cmd)
+  return mt and mt[MARK] ~= nil or false
+end
+
 function M.restore()
   pcall(vim.api.nvim_del_augroup_by_name, "cmdline.ui2")
   local ui2 = get_ui2()

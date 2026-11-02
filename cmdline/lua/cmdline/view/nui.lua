@@ -6,7 +6,7 @@ local Scrollbar = require("cmdline.view.scrollbar")
 local Util = require("cmdline.util")
 local View = require("cmdline.view")
 
-local uv = vim.uv or vim.loop
+local uv = vim.uv
 
 ---@class NuiView: NoiceView
 ---@field _nui? NuiPopup|NuiSplit
@@ -233,13 +233,13 @@ function NuiView:fix_border()
     and self._nui.border.winid
     and vim.api.nvim_win_is_valid(self._nui.border.winid)
   then
-    local winhl = vim.api.nvim_win_get_option(self._nui.border.winid, "winhighlight") or ""
+    local winhl = vim.api.nvim_get_option_value("winhighlight", { win = self._nui.border.winid })
     if not winhl:find("IncSearch") then
       local hl = vim.split(winhl, ",")
       hl[#hl + 1] = "Search:"
       hl[#hl + 1] = "IncSearch:"
       winhl = table.concat(hl, ",")
-      vim.api.nvim_win_set_option(self._nui.border.winid, "winhighlight", winhl)
+      vim.api.nvim_set_option_value("winhighlight", winhl, { scope = "local", win = self._nui.border.winid })
     end
   end
 end

@@ -9,7 +9,11 @@ local M = {}
 
 local cfg ---@type table
 
---- nvim_set_hl with 256-colour fallbacks for hex fg/bg.
+-- set by apply(true): redefine groups even if they exist (setup() with new options)
+local force = false
+
+--- nvim_set_hl with 256-colour fallbacks for hex fg/bg. Groups are defaults,
+--- so a colorscheme (or the user) that defines `Stl*` groups wins.
 local function set_hl(name, hl)
   for gui, cterm in pairs({ fg = 'ctermfg', bg = 'ctermbg' }) do
     local v = hl[gui]
@@ -17,6 +21,10 @@ local function set_hl(name, hl)
       hl[cterm] = rgb2cterm(v)
     end
   end
+  if force then
+    vim.api.nvim_set_hl(0, name, {})
+  end
+  hl.default = true
   vim.api.nvim_set_hl(0, name, hl)
 end
 
@@ -91,10 +99,14 @@ end
 
 function M.setup(config)
   cfg = config
-  M.apply()
+  M.apply(true)
 end
 
-function M.apply()
+--- Define the groups. On ColorScheme (after `:hi clear`) they are only
+--- defaults; `redefine` replaces existing ones, for setup() with new options.
+---@param redefine? boolean
+function M.apply(redefine)
+  force = redefine == true
   icon_cache = {}
   local c = cfg.colors
   for mode, spec in pairs(c.modes) do
@@ -113,6 +125,7 @@ function M.apply()
   define('DiagWarn', fg_of({ 'DiagnosticWarn' }, '#ffa500'))
   define('DiagInfo', fg_of({ 'DiagnosticInfo', 'Normal' }, '#ffffff'))
   define('DiagHint', fg_of({ 'DiagnosticHint' }, '#273faf'))
+  force = false
 end
 
 return M

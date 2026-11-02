@@ -553,7 +553,7 @@ function Listener.new(cb, opts)
   local self = setmetatable({}, { __index = Listener })
   self.cb = cb
   self.dirty = {}
-  self.timer = assert((vim.uv or vim.loop).new_timer())
+  self.timer = assert(vim.uv.new_timer())
   self.enabled = false
   self.opts = util.get("scope", defaults, opts or {}) --[[ @as ui.scope.Opts ]]
   id = id + 1

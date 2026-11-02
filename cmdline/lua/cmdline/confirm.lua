@@ -190,6 +190,13 @@ function M.setup(opts)
   })
 end
 
+--- Whether ui2's message module is patched right now.
+---@return boolean
+function M.is_patched()
+  local ui2 = get_ui2()
+  return ui2 ~= nil and ui2.msg[MARK] ~= nil
+end
+
 function M.restore()
   M.hide()
   pcall(vim.api.nvim_del_augroup_by_name, "cmdline.confirm")

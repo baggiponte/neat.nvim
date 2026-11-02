@@ -1,10 +1,10 @@
 -- Adapted from lualine.nvim (MIT) by hoob3rt and contributors; modified.
--- Source: lua/lualine/extensions/{lazy,man,neo-tree,oil,quickfix}.lua
+-- Source: lua/lualine/extensions/{man,neo-tree,oil,quickfix}.lua
 -- at nvim-lualine/lualine.nvim 221ce6b2d999187044529f49da6554a92f740a96.
--- Changes: expressed as statusline.nvim section tables keyed by filetype.
+-- Changes: expressed as statusline.nvim section tables keyed by filetype; lazy.nvim's dropped.
 
 -- Special-window layouts by filetype. Behaviour mirrors the lualine
--- extensions the replaced config used (lazy, man, neo-tree, oil, quickfix).
+-- extensions the replaced config used (man, neo-tree, oil, quickfix).
 local c = require('statusline.components')
 
 local M = {}
@@ -18,33 +18,6 @@ local function is_loclist(ctx)
 end
 
 M.builtin = {
-  lazy = {
-    a = {
-      function()
-        return 'lazy 💤'
-      end,
-    },
-    b = {
-      function()
-        local ok, lazy = pcall(require, 'lazy')
-        if not ok then
-          return ''
-        end
-        local s = lazy.stats()
-        return 'loaded: ' .. s.loaded .. '/' .. s.count
-      end,
-    },
-    c = {
-      function()
-        local ok, status = pcall(require, 'lazy.status')
-        if ok and status.has_updates() then
-          return c.escape(status.updates())
-        end
-        return ''
-      end,
-    },
-  },
-
   man = {
     a = {
       function()
