@@ -69,7 +69,8 @@ function M.float()
     title_pos = "center",
     hide = false,
   })
-  vim.wo[win].winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder,FloatTitle:FloatTitle"
+  -- same colours as the cmdline popup
+  vim.wo[win].winhighlight = "Normal:NoiceCmdlinePopup,FloatBorder:NoiceCmdlinePopupBorder,FloatTitle:NoiceCmdlinePopupTitle"
 end
 
 local function patch()
