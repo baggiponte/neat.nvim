@@ -6,14 +6,17 @@
 --     statusline = { enabled = true },                  -- small cached statusline
 --     select = { enabled = true },                      -- vim.ui.select via a telescope dropdown
 --     input = { enabled = true },                       -- vim.ui.input in a floating window
---     notify = { enabled = true, backend = "snacks" },  -- vim.notify toasts
---     indent = { enabled = true, backend = "snacks" },  -- indent and scope guides
+--     notify = { enabled = true, backend = "builtin" },  -- vim.notify toasts
+--     indent = { enabled = true, backend = "builtin" },  -- indent and scope guides
 --   })
 --
 -- or set `vim.g.neat` to the same table before startup. `require("neat.rename")`
 -- needs no setup. Heavy modules load on first use: input on the first
--- vim.ui.input(), the snacks notifier on the first vim.notify(), the snacks
+-- vim.ui.input(), the builtin notifier on the first vim.notify(), the builtin
 -- indent engine with the first file buffer, the cmdline popup after VimEnter.
+--
+-- The builtin notify, indent and input code is adapted from snacks.nvim and
+-- ships inside neat (see NOTICE); snacks.nvim does not need to be installed.
 
 local M = {}
 

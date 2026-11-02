@@ -14,8 +14,8 @@ local known = {
     win = true,
     expand = true,
   },
-  notify = { enabled = true, backend = true, snacks = true, nvim_notify = true },
-  indent = { enabled = true, backend = true, snacks = true, blink = true },
+  notify = { enabled = true, backend = true, builtin = true, snacks = true, nvim_notify = true },
+  indent = { enabled = true, backend = true, builtin = true, snacks = true, blink = true },
 }
 
 ---@param name string
@@ -132,15 +132,15 @@ function M.check()
     local backend = require("neat.indent").backend
     health.info("backend: " .. tostring(backend))
     if backend == "blink" then
-      need("blink.indent", "blink.indent", "Install https://github.com/saghen/blink.indent or use the snacks backend")
+      need("blink.indent", "blink.indent", "Install https://github.com/saghen/blink.indent or use the builtin backend")
     else
-      local snacks = package.loaded["neat.indent.snacks"]
-      if not snacks then
+      local guides = package.loaded["neat.indent.guides"]
+      if not guides then
         health.ok("guides load with the first file buffer")
-      elseif snacks.enabled then
+      elseif guides.enabled then
         health.ok("guides are on")
       else
-        health.info("guides are off (`:Ui indent on`)")
+        health.info("guides are off (`:Neat indent on`)")
       end
     end
   end

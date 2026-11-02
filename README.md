@@ -3,14 +3,20 @@
 A cmdline popup, a statusline and small UI replacements for Neovim 0.12, in one
 plugin. Every module is off until you turn it on, like snacks.nvim.
 
+neat has no plugin dependencies of its own. `input`, `notify`, `indent` and
+`rename` are adapted from snacks.nvim, and that code ships inside neat (see
+[Credits](#credits-and-licence)): you do not need snacks.nvim installed.
+`cmdline` needs nui.nvim, and a few modules use telescope, gitsigns or
+nvim-web-devicons when they are there.
+
 | Module | What it does | Replaces |
 | --- | --- | --- |
 | `cmdline` | Centred command-line popup on top of ui2 | noice.nvim |
 | `statusline` | Small statusline that reads per-buffer caches instead of polling | lualine.nvim |
 | `select` | Telescope dropdown for `vim.ui.select`, with dressing's code-action layout; falls back to the builtin without telescope | dressing.nvim |
 | `input` | Floating `vim.ui.input` with history and completion (neo-tree's file completion works) | snacks.nvim input |
-| `notify` | `vim.notify` backends (`snacks` toasts, `native` ui2, `nvim-notify`) | snacks.nvim notifier |
-| `indent` | Indent and scope guides (`snacks`, without animation, or `blink` for blink.indent) | snacks.nvim indent |
+| `notify` | `vim.notify` backends (`builtin` toasts, `native` ui2, `nvim-notify`) | snacks.nvim notifier |
+| `indent` | Indent and scope guides (`builtin`, without animation, or `blink` for blink.indent) | snacks.nvim indent |
 | `rename` | `require('neat.rename').on_rename_file(from, to)` sends LSP `willRenameFiles`/`didRenameFiles`; wire it to neo-tree's `FILE_MOVED`/`FILE_RENAMED` | snacks.nvim rename |
 
 ![cmdline popup](dev/cmdline-demo/out/cmdline/demo.gif)
@@ -28,8 +34,8 @@ require('neat').setup({
   statusline = { enabled = true },
   select = { enabled = true },
   input = { enabled = true },
-  notify = { enabled = true, backend = 'snacks' },
-  indent = { enabled = true, backend = 'snacks' },
+  notify = { enabled = true },  -- backend = 'builtin' by default
+  indent = { enabled = true },  -- backend = 'builtin' by default
 })
 ```
 
@@ -43,8 +49,8 @@ Options are checked with `vim.validate()` and misspelled keys show up in
 ## Startup cost
 
 `plugin/neat.lua` only defines `:Neat`. The heavy parts load on first use: the
-input window on the first `vim.ui.input()`, the snacks notifier on the first
-`vim.notify()`, the snacks indent engine with the first file buffer, and the
+input window on the first `vim.ui.input()`, the builtin notifier on the first
+`vim.notify()`, the builtin indent engine with the first file buffer, and the
 cmdline popup after `VimEnter`. The statusline loads at setup because it draws
 the first screen.
 
@@ -54,7 +60,7 @@ the first screen.
 | --- | --- |
 | `:Neat cmdline enable\|disable\|toggle` | Turn the cmdline popup on or off |
 | `:Neat statusline enable\|disable\|toggle\|refresh` | Take `'statusline'` over or hand it back; `refresh` drops every cache and redraws |
-| `:Neat indent on\|off\|toggle` | Turn the snacks indent guides on or off |
+| `:Neat indent on\|off\|toggle` | Turn the builtin indent guides on or off |
 | `:Neat notifications` | Notification history of the active backend |
 
 `:checkhealth neat` checks Neovim, unknown options, the plugins each module
@@ -149,20 +155,24 @@ default palette is gruvbox-material.
 
 ```lua
 select = { enabled = true, trim_prompt = true, telescope = nil, format_item_override = {} },
-input = { enabled = true },          -- snacks input options: icon, icon_pos, prompt_pos, win, expand
+input = { enabled = true },          -- icon, icon_pos, prompt_pos, win, expand (as in snacks' input)
 notify = {
   enabled = true,
-  backend = 'snacks',                -- 'snacks' | 'native' | 'nvim-notify'
-  snacks = {},                       -- snacks notifier options
+  backend = 'builtin',               -- 'builtin' | 'native' | 'nvim-notify'
+  builtin = {},                      -- builtin notifier options (same keys as snacks' notifier)
   nvim_notify = {},                  -- passed to require('notify').setup()
 },
 indent = {
   enabled = true,
-  backend = 'snacks',                -- 'snacks' | 'blink'
-  snacks = {},                       -- snacks indent options
+  backend = 'builtin',               -- 'builtin' | 'blink'
+  builtin = {},                      -- builtin guide options (same keys as snacks' indent)
   blink = {},                        -- passed to require('blink.indent').setup()
 },
 ```
+
+`builtin` is neat's own copy of the snacks.nvim code, so its options keep
+snacks' names. `backend = 'snacks'` and a `snacks = {...}` table are still
+accepted as older names for `builtin`; they never load snacks.nvim.
 
 ![select, input, notify and indent](dev/ui-demo/ui.gif)
 
