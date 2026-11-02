@@ -4,4 +4,3 @@ dev/statusline-review/feedback.json
 dev/statusline-review/server.*
 !dev/statusline-review/server.py
 dev/statusline-review/.feedback.*
-deps/
