@@ -1,0 +1,204 @@
+## normal
+text: [  NORMAL   main  +8 ~2 -8    ~/.config/Brewfile                                                                                                    5:1    2% ]
+  [  NORMAL ]                           fg=#ddc7a1 bg=- cterm=187 bold
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ +8 ]                                   fg=#a9b665 bg=- cterm=143
+  [~2 ]                                    fg=#7daea3 bg=- cterm=109
+  [-8 ]                                    fg=#ea6962 bg=- cterm=203
+  [  ]                                  fg=#701516 bg=- cterm=242
+  [ ~/.config/Brewfile ]                   fg=#ddc7a1 bg=- cterm=187
+  [   5:1  ]                               fg=#ddc7a1 bg=- cterm=187
+  [  2% ]                                  fg=#ddc7a1 bg=- cterm=187
+
+## diagnostics
+text: [  NORMAL   main  +8 ~2 -8    ~/.config/Brewfile                                                                                     󰅚 1 󰀪 2 󰌶 1    5:1    2% ]
+  [  NORMAL ]                           fg=#ddc7a1 bg=- cterm=187 bold
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ +8 ]                                   fg=#a9b665 bg=- cterm=143
+  [~2 ]                                    fg=#7daea3 bg=- cterm=109
+  [-8 ]                                    fg=#ea6962 bg=- cterm=203
+  [  ]                                  fg=#701516 bg=- cterm=242
+  [ ~/.config/Brewfile ]                   fg=#ddc7a1 bg=- cterm=187
+  [ 󰅚 1 ]                               fg=#ea6962 bg=- cterm=203
+  [󰀪 2 ]                                fg=#d8a657 bg=- cterm=179
+  [󰌶 1 ]                                fg=#d3869b bg=- cterm=175
+  [   5:1  ]                               fg=#ddc7a1 bg=- cterm=187
+  [  2% ]                                  fg=#ddc7a1 bg=- cterm=187
+
+## insert
+text: [  INSERT   main  +8 ~2 -8    ~/.config/Brewfile                                                                                     󰅚 1 󰀪 2 󰌶 1    5:1    2% ]
+  [  INSERT ]                           fg=#89b482 bg=- cterm=108
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ +8 ]                                   fg=#a9b665 bg=- cterm=143
+  [~2 ]                                    fg=#7daea3 bg=- cterm=109
+  [-8 ]                                    fg=#ea6962 bg=- cterm=203
+  [  ]                                  fg=#701516 bg=- cterm=242
+  [ ~/.config/Brewfile ]                   fg=#ddc7a1 bg=- cterm=187
+  [ 󰅚 1 ]                               fg=#ea6962 bg=- cterm=203
+  [󰀪 2 ]                                fg=#d8a657 bg=- cterm=179
+  [󰌶 1 ]                                fg=#d3869b bg=- cterm=175
+  [   5:1  ]                               fg=#89b482 bg=- cterm=108
+  [  2% ]                                  fg=#89b482 bg=- cterm=108
+
+## visual
+text: [  VISUAL   main  +8 ~2 -8    ~/.config/Brewfile                                                                                     󰅚 1 󰀪 2 󰌶 1    5:1    2% ]
+  [  VISUAL ]                           fg=#ea6962 bg=- cterm=203
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ +8 ]                                   fg=#a9b665 bg=- cterm=143
+  [~2 ]                                    fg=#7daea3 bg=- cterm=109
+  [-8 ]                                    fg=#ea6962 bg=- cterm=203
+  [  ]                                  fg=#701516 bg=- cterm=242
+  [ ~/.config/Brewfile ]                   fg=#ddc7a1 bg=- cterm=187
+  [ 󰅚 1 ]                               fg=#ea6962 bg=- cterm=203
+  [󰀪 2 ]                                fg=#d8a657 bg=- cterm=179
+  [󰌶 1 ]                                fg=#d3869b bg=- cterm=175
+  [   5:1  ]                               fg=#ea6962 bg=- cterm=203
+  [  2% ]                                  fg=#ea6962 bg=- cterm=203
+
+## visual line
+text: [  V-LINE   main  +8 ~2 -8    ~/.config/Brewfile                                                                                     󰅚 1 󰀪 2 󰌶 1    5:1    2% ]
+  [  V-LINE ]                           fg=#ea6962 bg=- cterm=203
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ +8 ]                                   fg=#a9b665 bg=- cterm=143
+  [~2 ]                                    fg=#7daea3 bg=- cterm=109
+  [-8 ]                                    fg=#ea6962 bg=- cterm=203
+  [  ]                                  fg=#701516 bg=- cterm=242
+  [ ~/.config/Brewfile ]                   fg=#ddc7a1 bg=- cterm=187
+  [ 󰅚 1 ]                               fg=#ea6962 bg=- cterm=203
+  [󰀪 2 ]                                fg=#d8a657 bg=- cterm=179
+  [󰌶 1 ]                                fg=#d3869b bg=- cterm=175
+  [   5:1  ]                               fg=#ea6962 bg=- cterm=203
+  [  2% ]                                  fg=#ea6962 bg=- cterm=203
+
+## replace
+text: [  REPLACE   main  +8 ~2 -8    ~/.config/Brewfile                                                                                    󰅚 1 󰀪 2 󰌶 1    5:1    2% ]
+  [  REPLACE ]                          fg=#a9b665 bg=- cterm=143
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ +8 ]                                   fg=#a9b665 bg=- cterm=143
+  [~2 ]                                    fg=#7daea3 bg=- cterm=109
+  [-8 ]                                    fg=#ea6962 bg=- cterm=203
+  [  ]                                  fg=#701516 bg=- cterm=242
+  [ ~/.config/Brewfile ]                   fg=#ddc7a1 bg=- cterm=187
+  [ 󰅚 1 ]                               fg=#ea6962 bg=- cterm=203
+  [󰀪 2 ]                                fg=#d8a657 bg=- cterm=179
+  [󰌶 1 ]                                fg=#d3869b bg=- cterm=175
+  [   5:1  ]                               fg=#a9b665 bg=- cterm=143
+  [  2% ]                                  fg=#a9b665 bg=- cterm=143
+
+## command
+text: [  COMMAND   main  +8 ~2 -8    ~/.config/Brewfile                                                                                    󰅚 1 󰀪 2 󰌶 1    5:1    2% ]
+  [  COMMAND ]                          fg=#d8a657 bg=- cterm=179
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ +8 ]                                   fg=#a9b665 bg=- cterm=143
+  [~2 ]                                    fg=#7daea3 bg=- cterm=109
+  [-8 ]                                    fg=#ea6962 bg=- cterm=203
+  [  ]                                  fg=#701516 bg=- cterm=242
+  [ ~/.config/Brewfile ]                   fg=#ddc7a1 bg=- cterm=187
+  [ 󰅚 1 ]                               fg=#ea6962 bg=- cterm=203
+  [󰀪 2 ]                                fg=#d8a657 bg=- cterm=179
+  [󰌶 1 ]                                fg=#d3869b bg=- cterm=175
+  [   5:1  ]                               fg=#d8a657 bg=- cterm=179
+  [  2% ]                                  fg=#d8a657 bg=- cterm=179
+
+## bottom
+text: [  NORMAL   main  +8 ~2 -8    ~/.config/Brewfile                                                                                     󰅚 1 󰀪 2 󰌶 1  233:1   Bot ]
+  [  NORMAL ]                           fg=#ddc7a1 bg=- cterm=187 bold
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ +8 ]                                   fg=#a9b665 bg=- cterm=143
+  [~2 ]                                    fg=#7daea3 bg=- cterm=109
+  [-8 ]                                    fg=#ea6962 bg=- cterm=203
+  [  ]                                  fg=#701516 bg=- cterm=242
+  [ ~/.config/Brewfile ]                   fg=#ddc7a1 bg=- cterm=187
+  [ 󰅚 1 ]                               fg=#ea6962 bg=- cterm=203
+  [󰀪 2 ]                                fg=#d8a657 bg=- cterm=179
+  [󰌶 1 ]                                fg=#d3869b bg=- cterm=175
+  [ 233:1  ]                               fg=#ddc7a1 bg=- cterm=187
+  [ Bot ]                                  fg=#ddc7a1 bg=- cterm=187
+
+## lsp attached
+text: [  NORMAL   main  +8 ~2 -8    ~/.config/Brewfile                                                                          󰅚 1 󰀪 2 󰌶 1   fake_ls  233:1   Bot ]
+  [  NORMAL ]                           fg=#ddc7a1 bg=- cterm=187 bold
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ +8 ]                                   fg=#a9b665 bg=- cterm=143
+  [~2 ]                                    fg=#7daea3 bg=- cterm=109
+  [-8 ]                                    fg=#ea6962 bg=- cterm=203
+  [  ]                                  fg=#701516 bg=- cterm=242
+  [ ~/.config/Brewfile ]                   fg=#ddc7a1 bg=- cterm=187
+  [ 󰅚 1 ]                               fg=#ea6962 bg=- cterm=203
+  [󰀪 2 ]                                fg=#d8a657 bg=- cterm=179
+  [󰌶 1 ]                                fg=#d3869b bg=- cterm=175
+  [  fake_ls ]                          fg=#89b482 bg=- cterm=108
+  [ 233:1  ]                               fg=#ddc7a1 bg=- cterm=187
+  [ Bot ]                                  fg=#ddc7a1 bg=- cterm=187
+
+## insert + lsp
+text: [  INSERT   main  +8 ~2 -8    ~/.config/Brewfile                                                                          󰅚 1 󰀪 2 󰌶 1   fake_ls  233:1   Bot ]
+  [  INSERT ]                           fg=#89b482 bg=- cterm=108
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ +8 ]                                   fg=#a9b665 bg=- cterm=143
+  [~2 ]                                    fg=#7daea3 bg=- cterm=109
+  [-8 ]                                    fg=#ea6962 bg=- cterm=203
+  [  ]                                  fg=#701516 bg=- cterm=242
+  [ ~/.config/Brewfile ]                   fg=#ddc7a1 bg=- cterm=187
+  [ 󰅚 1 ]                               fg=#ea6962 bg=- cterm=203
+  [󰀪 2 ]                                fg=#d8a657 bg=- cterm=179
+  [󰌶 1 ]                                fg=#d3869b bg=- cterm=175
+  [  fake_ls ]                          fg=#89b482 bg=- cterm=108
+  [ 233:1  ]                               fg=#89b482 bg=- cterm=108
+  [ Bot ]                                  fg=#89b482 bg=- cterm=108
+
+## split: active [No Name]
+text: [  NORMAL   main                                                                                                                         fake_ls    1:1   Top ]
+  [  NORMAL ]                           fg=#ddc7a1 bg=- cterm=187 bold
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [  fake_ls ]                          fg=#89b482 bg=- cterm=108
+  [   1:1  ]                               fg=#ddc7a1 bg=- cterm=187
+  [ Top ]                                  fg=#ddc7a1 bg=- cterm=187
+
+## split: inactive file
+text: [ Brewfile                                                                                                                                                233:1  ]
+  [ Brewfile ]                             fg=#ddc7a1 bg=- cterm=187
+  [ 233:1  ]                               fg=#7daea3 bg=- cterm=109
+
+## terminal
+text: [  TERMINAL   main  term://~/dev/projs/statusline.nvim//87457:/bin/zsh                                                                   fake_ls    3:3    7% ]
+  [  TERMINAL ]                         fg=#d3869b bg=- cterm=175
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ term://~/dev/projs/statusline.nvim//87457:/bin/zsh ] fg=#ddc7a1 bg=- cterm=187
+  [  fake_ls ]                          fg=#89b482 bg=- cterm=108
+  [   3:3  ]                               fg=#d3869b bg=- cterm=175
+  [  7% ]                                  fg=#d3869b bg=- cterm=175
+
+## terminal-normal
+text: [  NORMAL   main  term://~/dev/projs/statusline.nvim//87457:/bin/zsh                                                                     fake_ls    3:2    7% ]
+  [  NORMAL ]                           fg=#ddc7a1 bg=- cterm=187 bold
+  [  main ]                             fg=#ea6962 bg=- cterm=203
+  [ term://~/dev/projs/statusline.nvim//87457:/bin/zsh ] fg=#ddc7a1 bg=- cterm=187
+  [  fake_ls ]                          fg=#89b482 bg=- cterm=108
+  [   3:2  ]                               fg=#ddc7a1 bg=- cterm=187
+  [  7% ]                                  fg=#ddc7a1 bg=- cterm=187
+
+## quickfix
+text: [ Quickfix List  compare qf                                                                                                                                 1:1  ]
+  [ Quickfix List ]                        fg=#ddc7a1 bg=- cterm=187 bold
+  [ compare qf ]                           fg=#ea6962 bg=- cterm=203
+  [   1:1  ]                               fg=#ddc7a1 bg=- cterm=187
+
+## man
+text: [ MAN  ls(1)                                                                                                                                         Top    1:1  ]
+  [ MAN ]                                  fg=#ddc7a1 bg=- cterm=187 bold
+  [ ls(1) ]                                fg=#ea6962 bg=- cterm=203
+  [ Top ]                                  fg=#89b482 bg=- cterm=108
+  [   1:1  ]                               fg=#ddc7a1 bg=- cterm=187
+
+## oil
+text: [ ~/.config/                                                                                                                                                     ]
+  [ ~/.config/ ]                           fg=#ddc7a1 bg=- cterm=187 bold
+
+## neo-tree
+text: [ ~/dev/projs/statusline.nvim                                                                                                                                    ]
+  [ ~/dev/projs/statusline.nvim ]          fg=#ddc7a1 bg=- cterm=187 bold
+
+## lazy (window under float)
+text: [ ~/dev/projs/statusline.nvim                                                                                                                                    ]
+  [ ~/dev/projs/statusline.nvim ]          fg=#504945 bg=- cterm=239
