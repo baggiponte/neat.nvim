@@ -13,10 +13,14 @@ esac
 out=out/$name
 rm -rf "$out" && mkdir -p "$out/frames"
 tape=$out/run.tape
+# vhs ignores Set commands that follow any other command, so Env goes after
+# the tape's Set block (right before its first Hide).
 {
   echo "Output $out/demo.gif"
   echo "Output $out/demo.mp4"
-  echo "Env NVIM_APPNAME \"$appname\""
-  sed "s#frames/#$out/frames/#" cmdline.tape
+  awk -v out="$out" -v app="$appname" '
+    !env && /^Hide$/ { print "Env NVIM_APPNAME \"" app "\""; env = 1 }
+    { gsub("frames/", out "/frames/"); print }
+  ' cmdline.tape
 } >"$tape"
 timeout 300 vhs "$tape"
