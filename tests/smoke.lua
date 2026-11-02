@@ -77,6 +77,40 @@ function tests.statusline()
   check(sl.config.lsp_scope == "buffer", "setup() again applies new options")
   check(not pcall(sl.setup, { lsp_scope = 1 }), "setup() rejects a wrong type")
   sl.setup({})
+
+  -- Drawing must not load plugins (the statusline runs under textlock, where a
+  -- plugin manager's require hook can fail with E565): devicons is required on
+  -- the next tick, then the icon shows.
+  local rendering, loaded_while_rendering, loads = false, false, 0
+  table.insert(package.loaders, 1, function(modname)
+    if modname ~= "nvim-web-devicons" then
+      return
+    end
+    loads = loads + 1
+    loaded_while_rendering = loaded_while_rendering or rendering
+    return function()
+      return {
+        get_icon = function()
+          return "@icon@", "DevIconLua"
+        end,
+        get_icon_by_filetype = function() end,
+      }
+    end
+  end)
+  vim.cmd("edit tests/smoke.lua")
+  rendering = true
+  sl.render()
+  rendering = false
+  check(not loaded_while_rendering, "render() does not require nvim-web-devicons")
+  vim.wait(500, function()
+    return loads > 0
+  end)
+  check(loads == 1, "nvim-web-devicons is required once, after the draw")
+  check(sl.render():find("@icon@", 1, true) ~= nil, "the file icon shows once devicons is loaded")
+  vim.cmd("bwipeout!")
+  vim.bo.filetype = "neo-tree"
+  check(not sl.render():find(vim.fn.fnamemodify(vim.fn.getcwd(), ":~"), 1, true), "the neo-tree statusline is empty")
+  vim.bo.filetype = ""
   check(#health_errors() == 0, ":checkhealth neat has no errors")
 end
 

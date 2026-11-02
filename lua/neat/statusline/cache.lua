@@ -29,6 +29,35 @@ end
 -- file ----------------------------------------------------------------------
 
 local devicons ---@type table|false|nil
+local devicons_scheduled = false
+
+--- nvim-web-devicons if it is loaded. The statusline is drawn under textlock,
+--- so it must not load anything itself: a plugin manager's require hook may
+--- :packadd or wait on async work there and fail with E565. The first time the
+--- icons are missing, require them on the next tick instead, then drop the
+--- file caches and redraw.
+local function get_devicons()
+  if devicons ~= nil then
+    return devicons
+  end
+  local mod = package.loaded['nvim-web-devicons']
+  if mod then
+    devicons = mod
+    return mod
+  end
+  if not devicons_scheduled then
+    devicons_scheduled = true
+    vim.schedule(function()
+      local ok, loaded = pcall(require, 'nvim-web-devicons')
+      devicons = ok and loaded or false
+      if devicons then
+        M.invalidate_file()
+        require('neat.statusline').redraw()
+      end
+    end)
+  end
+  return false
+end
 
 -- Same lookup as lualine's filetype component: by file name, then by
 -- filetype, then a generic icon; nothing when the buffer has no filetype.
@@ -37,17 +66,14 @@ local function get_icon(buf)
   if ft == '' then
     return ''
   end
-  if devicons == nil then
-    local ok, mod = pcall(require, 'nvim-web-devicons')
-    devicons = ok and mod or false
-  end
-  if not devicons then
+  local icons = get_devicons()
+  if not icons then
     return ''
   end
   local name = vim.fn.fnamemodify(api.nvim_buf_get_name(buf), ':t')
-  local icon, group = devicons.get_icon(name)
+  local icon, group = icons.get_icon(name)
   if icon == nil then
-    icon, group = devicons.get_icon_by_filetype(ft)
+    icon, group = icons.get_icon_by_filetype(ft)
   end
   if icon == nil and group == nil then
     icon, group = '\u{e612}', 'DevIconDefault'
