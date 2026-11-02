@@ -40,8 +40,9 @@ M.builtin = {
   oil = {
     a = {
       function(ctx)
-        local ok, oil = pcall(require, 'oil')
-        if not ok then
+        -- an oil buffer means oil is loaded; never load it while drawing
+        local oil = package.loaded['oil']
+        if not oil then
           return ''
         end
         local dir = oil.get_current_dir(ctx.buf)
