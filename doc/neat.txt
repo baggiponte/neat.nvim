@@ -16,7 +16,8 @@ neat.nvim bundles small replacements for noice.nvim (cmdline popup),
 lualine.nvim (statusline), dressing.nvim (vim.ui.select) and snacks.nvim
 (input, notifier, indent guides, LSP file rename). Every module is off until
 its table sets `enabled = true`. Requires Neovim 0.12. The `cmdline` module
-also needs nui.nvim.
+also needs nui.nvim. The snacks.nvim parts are copies that ship inside neat
+(see NOTICE): snacks.nvim does not need to be installed.
 
 ==============================================================================
 2. SETUP                                                          *neat-setup*
@@ -30,8 +31,8 @@ neat.setup({opts})
           statusline = { enabled = true },
           select = { enabled = true },
           input = { enabled = true },
-          notify = { enabled = true, backend = 'snacks' },
-          indent = { enabled = true, backend = 'snacks' },
+          notify = { enabled = true },  -- backend = 'builtin'
+          indent = { enabled = true },  -- backend = 'builtin'
         })
 <
                                                                       *g:neat*
@@ -44,7 +45,7 @@ vim.g.loaded_neat
     Set to `true` before startup to turn the plugin off entirely.
 
 Modules load on first use: the input window on the first |vim.ui.input()|,
-the snacks notifier on the first |vim.notify()|, the snacks indent engine
+the builtin notifier on the first |vim.notify()|, the builtin indent engine
 with the first file buffer, the cmdline popup after |VimEnter|.
 
 ==============================================================================
@@ -58,7 +59,7 @@ with the first file buffer, the cmdline popup after |VimEnter|.
     `refresh` drops every cache and redraws.
 
 :Neat indent {on|off|toggle}                                    *:Neat-indent*
-    Turn the snacks indent guides on or off.
+    Turn the builtin indent guides on or off.
 
 :Neat notifications                                      *:Neat-notifications*
     Open the notification history of the active `notify` backend.
@@ -98,13 +99,16 @@ input                                                             *neat-input*
     Options: `icon`, `icon_hl`, `icon_pos`, `prompt_pos`, `win`, `expand`.
 
 notify                                                           *neat-notify*
-    |vim.notify()| backend: `backend` = "snacks" (toasts), "native" (ui2) or
-    "nvim-notify". `snacks` and `nvim_notify` pass options to each
+    |vim.notify()| backend: `backend` = "builtin" (toasts), "native" (ui2) or
+    "nvim-notify". `builtin` and `nvim_notify` pass options to each
     backend. LSP progress is in the statusline (|neat-statusline|).
 
 indent                                                           *neat-indent*
-    Indent and scope guides: `backend` = "snacks" or "blink"
-    (blink.indent). `snacks` and `blink` pass options to each backend.
+    Indent and scope guides: `backend` = "builtin" or "blink"
+    (blink.indent). `builtin` and `blink` pass options to each backend.
+
+    "builtin" is code adapted from snacks.nvim that ships inside neat, so
+    its options keep snacks' names; snacks.nvim is not needed.
 
 rename                                                           *neat-rename*
     `require('neat.rename').on_rename_file(from, to, rename?)` sends LSP

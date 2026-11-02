@@ -1,55 +1,57 @@
 -- Indent guides with two interchangeable engines:
 --
--- * "snacks": the vendored snacks indent + scope guides (ui.indent.snacks)
+-- * "builtin": neat's own indent + scope guides (neat.indent.guides). Their
+--   code is adapted from snacks.nvim and ships inside neat; snacks.nvim is not
+--   needed.
 -- * "blink": saghen/blink.indent, which must be installed separately
 
 local M = {}
 
 ---@class ui.indent.Config
 ---@field enabled? boolean
----@field backend? "snacks"|"blink"
----@field snacks? table options for ui.indent.snacks (same shape as snacks.nvim's `indent`)
+---@field backend? "builtin"|"blink"
+---@field builtin? table options for the builtin guides (same shape as snacks.nvim's `indent`)
 ---@field blink? table options passed to `require("blink.indent").setup()`
 local defaults = {
-  backend = "snacks",
-  snacks = {},
+  backend = "builtin",
+  builtin = {},
   blink = {},
 }
 
----@type "snacks"|"blink"|nil the active backend, nil before setup()
+---@type "builtin"|"blink"|nil the active backend, nil before setup()
 M.backend = nil
 
-local function enable_snacks()
-  require("neat.indent.snacks").enable()
+local function enable_builtin()
+  require("neat.indent.guides").enable()
 end
 
 ---@param opts? ui.indent.Config
 function M.setup(opts)
   local config = vim.tbl_deep_extend("force", defaults, opts or {})
   vim.validate("indent.backend", config.backend, function(v)
-    return v == "snacks" or v == "blink"
-  end, false, '"snacks" or "blink"')
-  vim.validate("indent.snacks", config.snacks, "table")
+    return v == "builtin" or v == "blink"
+  end, false, '"builtin" or "blink"')
+  vim.validate("indent.builtin", config.builtin, "table")
   vim.validate("indent.blink", config.blink, "table")
   M.backend = config.backend
 
   -- calling setup() again applies the new options
-  local snacks = package.loaded["neat.indent.snacks"]
-  if snacks and snacks.enabled then
-    snacks.disable()
+  local guides = package.loaded["neat.indent.guides"]
+  if guides and guides.enabled then
+    guides.disable()
   end
   pcall(vim.api.nvim_del_augroup_by_name, "ui_indent_load")
 
-  if config.backend == "snacks" then
-    require("neat.util").config.indent = config.snacks
-    if snacks or vim.v.vim_did_enter == 1 then
-      enable_snacks()
+  if config.backend == "builtin" then
+    require("neat.util").config.indent = config.builtin
+    if guides or vim.v.vim_did_enter == 1 then
+      enable_builtin()
     else
       -- Load the engine (about 1,100 lines) with the first file buffer, not at startup.
       vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
         group = vim.api.nvim_create_augroup("ui_indent_load", { clear = true }),
         once = true,
-        callback = enable_snacks,
+        callback = enable_builtin,
       })
     end
   else
@@ -57,27 +59,27 @@ function M.setup(opts)
   end
 end
 
---- Turn the snacks indent guides on or off (`:Neat indent on|off|toggle`).
+--- Turn the builtin indent guides on or off (`:Neat indent on|off|toggle`).
 ---@param on? boolean nil toggles
 function M.set(on)
   if M.backend == nil then
-    -- `:Neat indent` without `indent.enabled`: use neat's `indent.snacks` options
+    -- `:Neat indent` without `indent.enabled`: use neat's `indent.builtin` options
     local o = require("neat").options.indent or {}
-    require("neat.util").config.indent = o.snacks or {}
-    M.backend = "snacks"
+    require("neat.util").config.indent = o.builtin or {}
+    M.backend = "builtin"
   end
-  if M.backend ~= "snacks" then
-    vim.notify("neat.nvim: `:Neat indent` controls the snacks backend only", vim.log.levels.WARN)
+  if M.backend ~= "builtin" then
+    vim.notify("neat.nvim: `:Neat indent` controls the builtin backend only", vim.log.levels.WARN)
     return
   end
-  local snacks = require("neat.indent.snacks")
+  local guides = require("neat.indent.guides")
   if on == nil then
-    on = not snacks.enabled
+    on = not guides.enabled
   end
   if on then
-    snacks.enable()
+    guides.enable()
   else
-    snacks.disable()
+    guides.disable()
   end
 end
 

@@ -86,18 +86,19 @@ function tests.ui()
   check(not loaded("neat.statusline"), "statusline stays off")
   check(not loaded("neat.input"), "neat.input is not loaded at startup")
   check(not loaded("neat.notify.notifier"), "the notifier is not loaded at startup")
-  check(not loaded("neat.indent.snacks"), "the indent engine is not loaded without a file")
+  check(not loaded("neat.indent.guides"), "the indent engine is not loaded without a file")
   vim.notify("smoke test")
   check(loaded("neat.notify.notifier"), "the first vim.notify() loads the notifier")
   check(vim.notify == require("neat.notify.notifier").notify, "vim.notify is the notifier after the first call")
   check(vim.ui.select == require("neat.select").select, "vim.ui.select is neat's")
   vim.cmd("edit tests/smoke.lua")
-  check(loaded("neat.indent.snacks"), "opening a file loads the indent engine")
+  check(loaded("neat.indent.guides"), "opening a file loads the indent engine")
   vim.cmd("Neat indent off")
-  check(not require("neat.indent.snacks").enabled, ":Neat indent off")
+  check(not require("neat.indent.guides").enabled, ":Neat indent off")
   vim.cmd("Neat indent toggle")
-  check(require("neat.indent.snacks").enabled, ":Neat indent toggle")
+  check(require("neat.indent.guides").enabled, ":Neat indent toggle")
   check(not pcall(require("neat.notify").setup, { backend = "nope" }), "notify rejects an unknown backend")
+  check(not loaded("snacks"), "snacks.nvim is never required")
   check(#health_errors() == 0, ":checkhealth neat has no errors")
 end
 
@@ -129,8 +130,8 @@ if name == "ui" then
   vim.g.neat = {
     select = { enabled = true },
     input = { enabled = true },
-    notify = { enabled = true, backend = "snacks" },
-    indent = { enabled = true, backend = "snacks" },
+    notify = { enabled = true, backend = "builtin" },
+    indent = { enabled = true, backend = "builtin" },
   }
 end
 
