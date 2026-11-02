@@ -8,6 +8,8 @@
 -- exits non-zero on the first failure.
 local name = assert(os.getenv("SMOKE"), "set SMOKE to off, statusline, ui or cmdline")
 local failures = 0
+-- Neovim 0.12 ships a default 'statusline'; "off" must leave it as it was
+local initial_statusline = vim.go.statusline
 
 local function check(cond, msg)
   if cond then
@@ -44,7 +46,7 @@ function tests.off()
   for _, mod in ipairs({ "neat.statusline", "neat.notify", "neat.select", "neat.indent", "neat.cmdline" }) do
     check(not loaded(mod), mod .. " is not loaded when off")
   end
-  check(vim.go.statusline == "", "'statusline' is untouched")
+  check(vim.go.statusline == initial_statusline, "'statusline' is untouched")
   vim.cmd("helptags doc")
   check(pcall(vim.cmd, "help neat"), ":h neat")
   check(pcall(vim.cmd, "help :Neat-indent"), ":h :Neat-indent")
