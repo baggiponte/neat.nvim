@@ -238,6 +238,73 @@ function M.invalidate_lsp()
   lsp_buf = {}
 end
 
+-- lsp progress ----------------------------------------------------------------
+
+local SPINNER = { '⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏' }
+local MAX_WIDTH = 40 -- per client
+local progress = {} ---@type table<integer, table<integer|string, {title?: string, message?: string, percentage?: integer}>>
+local progress_str ---@type string?
+local frame = 0
+
+--- Track `$/progress` from an LspProgress event (`ev.data`).
+---@param data {client_id: integer, params: lsp.ProgressParams}
+function M.update_progress(data)
+  local value = data and data.params and data.params.value
+  if type(value) ~= 'table' then
+    return
+  end
+  local token = data.params.token
+  local items = progress[data.client_id] or {}
+  if value.kind == 'end' then
+    items[token] = nil
+  else
+    local item = items[token] or {}
+    item.title = value.title or item.title
+    item.message = value.message
+    item.percentage = value.percentage or item.percentage
+    items[token] = item
+  end
+  progress[data.client_id] = next(items) and items or nil
+  frame = frame % #SPINNER + 1
+  progress_str = nil
+end
+
+---@param client_id? integer nil clears every client
+function M.clear_progress(client_id)
+  if client_id then
+    progress[client_id] = nil
+  else
+    progress = {}
+  end
+  progress_str = nil
+end
+
+--- Spinner plus one line per client with work in progress, or ''.
+function M.lsp_progress()
+  if progress_str then
+    return progress_str
+  end
+  local parts = {}
+  for _, items in pairs(progress) do
+    local _, item = next(items)
+    if item then
+      local s = item.title or ''
+      if item.message and item.message ~= '' then
+        s = s .. (s ~= '' and ' ' or '') .. item.message
+      end
+      if vim.fn.strchars(s) > MAX_WIDTH then
+        s = vim.fn.strcharpart(s, 0, MAX_WIDTH - 1) .. '…'
+      end
+      if item.percentage then
+        s = ('%s %d%%'):format(s, item.percentage)
+      end
+      parts[#parts + 1] = s
+    end
+  end
+  progress_str = #parts == 0 and '' or esc(SPINNER[frame] .. ' ' .. table.concat(parts, ' | '))
+  return progress_str
+end
+
 function M.forget(buf)
   files[buf], gits[buf], diags[buf], lsp_buf[buf] = nil, nil, nil, nil
 end

@@ -14,7 +14,7 @@ local known = {
     win = true,
     expand = true,
   },
-  notify = { enabled = true, backend = true, lsp_progress = true, snacks = true, nvim_notify = true },
+  notify = { enabled = true, backend = true, snacks = true, nvim_notify = true },
   indent = { enabled = true, backend = true, snacks = true, blink = true },
 }
 

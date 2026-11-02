@@ -123,6 +123,11 @@ function M.diagnostics(ctx)
   return cache.diagnostics(ctx.buf)
 end
 
+--- LSP `$/progress` (title, message, percentage), updated on LspProgress.
+function M.lsp_progress()
+  return cache.lsp_progress()
+end
+
 function M.lsp(ctx)
   return cache.lsp(ctx.cfg.lsp_scope == 'buffer' and ctx.buf or nil)
 end

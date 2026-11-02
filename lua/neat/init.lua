@@ -6,7 +6,7 @@
 --     statusline = { enabled = true },                  -- small cached statusline
 --     select = { enabled = true },                      -- vim.ui.select via a telescope dropdown
 --     input = { enabled = true },                       -- vim.ui.input in a floating window
---     notify = { enabled = true, backend = "snacks" },  -- vim.notify + LSP progress
+--     notify = { enabled = true, backend = "snacks" },  -- vim.notify toasts
 --     indent = { enabled = true, backend = "snacks" },  -- indent and scope guides
 --   })
 --

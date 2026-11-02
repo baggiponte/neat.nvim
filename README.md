@@ -9,7 +9,7 @@ plugin. Every module is off until you turn it on, like snacks.nvim.
 | `statusline` | Small statusline that reads per-buffer caches instead of polling | lualine.nvim |
 | `select` | Telescope dropdown for `vim.ui.select`, with dressing's code-action layout; falls back to the builtin without telescope | dressing.nvim |
 | `input` | Floating `vim.ui.input` with history and completion (neo-tree's file completion works) | snacks.nvim input |
-| `notify` | `vim.notify` backends (`snacks` toasts, `native` ui2, `nvim-notify`) and LSP progress through the active one | snacks.nvim notifier |
+| `notify` | `vim.notify` backends (`snacks` toasts, `native` ui2, `nvim-notify`) | snacks.nvim notifier |
 | `indent` | Indent and scope guides (`snacks`, without animation, or `blink` for blink.indent) | snacks.nvim indent |
 | `rename` | `require('neat.rename').on_rename_file(from, to)` sends LSP `willRenameFiles`/`didRenameFiles`; wire it to neo-tree's `FILE_MOVED`/`FILE_RENAMED` | snacks.nvim rename |
 
@@ -126,7 +126,8 @@ the `noice` filetype, so colorschemes that theme noice keep working.
 
 ## statusline
 
-Same sections, palette and components as the lualine setup it replaced, with
+Same sections, palette and components as the lualine setup it replaced, plus
+LSP progress (`lsp_progress`, next to the client names in section `y`), with
 `man`, `neo-tree`, `oil` and `quickfix` layouts. Each component reads a
 per-buffer cache that autocmds invalidate (`DiagnosticChanged`,
 `GitSignsUpdate`, `LspAttach`, `BufWritePost`, ...), and updates go through a
@@ -134,7 +135,8 @@ single scheduled `redrawstatus!`.
 
 Defaults live in `lua/neat/statusline/config.lua`. Sections `a`, `b`, `c`, `x`,
 `y`, `z` take built-in component names (`mode`, `branch`, `diff`, `fileicon`,
-`filepath`, `filename`, `diagnostics`, `lsp`, `location`, `progress`) or
+`filepath`, `filename`, `diagnostics`, `lsp`, `lsp_progress`, `location`,
+`progress`) or
 functions `function(ctx) return string end`. Colours are palette keys, hex
 strings or highlight tables; 256-colour fallbacks are derived for terminals
 without truecolor. The `Stl*` highlight groups are defined with
@@ -151,7 +153,6 @@ input = { enabled = true },          -- snacks input options: icon, icon_pos, pr
 notify = {
   enabled = true,
   backend = 'snacks',                -- 'snacks' | 'native' | 'nvim-notify'
-  lsp_progress = true,               -- render $/progress with the active backend
   snacks = {},                       -- snacks notifier options
   nvim_notify = {},                  -- passed to require('notify').setup()
 },

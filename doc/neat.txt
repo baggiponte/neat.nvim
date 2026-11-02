@@ -80,8 +80,10 @@ cmdline                                                         *neat-cmdline*
 statusline                                                   *neat-statusline*
     Statusline built from sections `a`, `b`, `c`, `x`, `y`, `z`. Each takes
     component names (`mode`, `branch`, `diff`, `fileicon`, `filepath`,
-    `filename`, `diagnostics`, `lsp`, `location`, `progress`) or functions
-    `function(ctx) return string end`. Other options: `palette`, `colors`,
+    `filename`, `diagnostics`, `lsp`, `lsp_progress`, `location`,
+    `progress`) or functions `function(ctx) return string end`.
+    `lsp_progress` shows LSP `$/progress` (title, message, percentage)
+    and is in section `y` by default. Other options: `palette`, `colors`,
     `icons`, `lsp_scope` ("all" or "buffer"), `diagnostics_update_in_insert`,
     `inactive_sections`, `extensions` (filetype -> sections). Defaults are
     in lua/neat/statusline/config.lua. The `Stl*` highlight groups are
@@ -97,8 +99,8 @@ input                                                             *neat-input*
 
 notify                                                           *neat-notify*
     |vim.notify()| backend: `backend` = "snacks" (toasts), "native" (ui2) or
-    "nvim-notify". `lsp_progress` shows LSP progress with the active
-    backend. `snacks` and `nvim_notify` pass options to each backend.
+    "nvim-notify". `snacks` and `nvim_notify` pass options to each
+    backend. LSP progress is in the statusline (|neat-statusline|).
 
 indent                                                           *neat-indent*
     Indent and scope guides: `backend` = "snacks" or "blink"

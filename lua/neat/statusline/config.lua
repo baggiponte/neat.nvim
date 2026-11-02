@@ -93,7 +93,7 @@ M.defaults = {
     b = { 'branch', 'diff' },
     c = { 'fileicon', 'filepath' },
     x = { 'diagnostics' },
-    y = { 'lsp' },
+    y = { 'lsp_progress', 'lsp' },
     z = { 'location', 'progress' },
   },
   inactive_sections = {

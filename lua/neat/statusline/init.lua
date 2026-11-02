@@ -186,7 +186,15 @@ local function autocmds()
     redraw()
   end)
 
-  au({ 'LspAttach', 'LspDetach' }, function()
+  au('LspProgress', function(args)
+    cache.update_progress(args.data)
+    redraw()
+  end)
+
+  au({ 'LspAttach', 'LspDetach' }, function(args)
+    if args.event == 'LspDetach' and args.data then
+      cache.clear_progress(args.data.client_id)
+    end
     cache.invalidate_lsp()
     -- on detach the client is still listed until the callback returns
     vim.schedule(function()
