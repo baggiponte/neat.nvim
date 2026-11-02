@@ -1,0 +1,123 @@
+*neat.txt*    A cmdline popup, a statusline and small UI replacements
+
+==============================================================================
+CONTENTS                                                       *neat-contents*
+
+  1. Introduction ........................................... |neat|
+  2. Setup .................................................. |neat-setup|
+  3. Commands ............................................... |:Neat|
+  4. Modules ................................................ |neat-modules|
+  5. Health ................................................. |neat-health|
+
+==============================================================================
+1. INTRODUCTION                                                         *neat*
+
+neat.nvim bundles small replacements for noice.nvim (cmdline popup),
+lualine.nvim (statusline), dressing.nvim (vim.ui.select) and snacks.nvim
+(input, notifier, indent guides, LSP file rename). Every module is off until
+its table sets `enabled = true`. Requires Neovim 0.12. The `cmdline` module
+also needs nui.nvim.
+
+==============================================================================
+2. SETUP                                                          *neat-setup*
+
+                                                                *neat.setup()*
+neat.setup({opts})
+    Configure neat.nvim and start the modules that set `enabled = true`.
+    Options are checked with |vim.validate()|. >lua
+        require('neat').setup({
+          cmdline = { enabled = true },
+          statusline = { enabled = true },
+          select = { enabled = true },
+          input = { enabled = true },
+          notify = { enabled = true, backend = 'snacks' },
+          indent = { enabled = true, backend = 'snacks' },
+        })
+<
+                                                                      *g:neat*
+vim.g.neat
+    The same table (or a Lua function returning it). When set before
+    startup, plugin/neat.lua calls |neat.setup()| with it.
+
+                                                               *g:loaded_neat*
+vim.g.loaded_neat
+    Set to `true` before startup to turn the plugin off entirely.
+
+Modules load on first use: the input window on the first |vim.ui.input()|,
+the snacks notifier on the first |vim.notify()|, the snacks indent engine
+with the first file buffer, the cmdline popup after |VimEnter|.
+
+==============================================================================
+3. COMMANDS                                                            *:Neat*
+
+:Neat cmdline {enable|disable|toggle}                          *:Neat-cmdline*
+    Turn the cmdline popup on or off.
+
+:Neat statusline {enable|disable|toggle|refresh}            *:Neat-statusline*
+    Take 'statusline' over or hand it back to what was there before.
+    `refresh` drops every cache and redraws.
+
+:Neat indent {on|off|toggle}                                    *:Neat-indent*
+    Turn the snacks indent guides on or off.
+
+:Neat notifications                                      *:Neat-notifications*
+    Open the notification history of the active `notify` backend.
+
+==============================================================================
+4. MODULES                                                      *neat-modules*
+
+cmdline                                                         *neat-cmdline*
+    Centred command-line popup on top of ui2 (`vim._core.ui2`). Messages,
+    |:messages| and confirm dialogs stay with ui2; neat keeps ui2's bottom
+    line empty
+    while the popup is open, shows ui2's pager as a centred float, and
+    shows |confirm()| prompts in a float. Options: `cmdline` (view, format),
+    `confirm` (`style` = "box", "toast" or "ui2"), `ui2` (`disable_cmdline`,
+    `pager`), `throttle`, `views`, `format`, `debug`. Defaults are in
+    lua/neat/cmdline/config/init.lua. Highlight groups keep noice's names
+    (`NoiceCmdlinePopup`, ...).
+
+statusline                                                   *neat-statusline*
+    Statusline built from sections `a`, `b`, `c`, `x`, `y`, `z`. Each takes
+    component names (`mode`, `branch`, `diff`, `fileicon`, `filepath`,
+    `filename`, `diagnostics`, `lsp`, `lsp_progress`, `location`,
+    `progress`) or functions `function(ctx) return string end`.
+    `lsp_progress` shows LSP `$/progress` (title, message, percentage)
+    and is in section `y` by default. Other options: `palette`, `colors`,
+    `icons`, `lsp_scope` ("all" or "buffer"), `diagnostics_update_in_insert`,
+    `inactive_sections`, `extensions` (filetype -> sections). Defaults are
+    in lua/neat/statusline/config.lua. The `Stl*` highlight groups are
+    defaults, so a colorscheme can override them.
+
+select                                                           *neat-select*
+    |vim.ui.select()| as a telescope dropdown; the builtin menu without
+    telescope. Options: `trim_prompt`, `telescope`, `format_item_override`.
+
+input                                                             *neat-input*
+    |vim.ui.input()| in a floating window with history and completion.
+    Options: `icon`, `icon_hl`, `icon_pos`, `prompt_pos`, `win`, `expand`.
+
+notify                                                           *neat-notify*
+    |vim.notify()| backend: `backend` = "snacks" (toasts), "native" (ui2) or
+    "nvim-notify". `snacks` and `nvim_notify` pass options to each
+    backend. LSP progress is in the statusline (|neat-statusline|).
+
+indent                                                           *neat-indent*
+    Indent and scope guides: `backend` = "snacks" or "blink"
+    (blink.indent). `snacks` and `blink` pass options to each backend.
+
+rename                                                           *neat-rename*
+    `require('neat.rename').on_rename_file(from, to, rename?)` sends LSP
+    `workspace/willRenameFiles` and `workspace/didRenameFiles`. Call it from
+    a file explorer's rename event. Needs no setup.
+
+==============================================================================
+5. HEALTH                                                        *neat-health*
+
+`:checkhealth neat` checks Neovim, unknown options, the plugins each enabled
+module needs (nui.nvim, telescope, nvim-notify, blink.indent, gitsigns,
+nvim-web-devicons), whether another plugin replaced |vim.notify()|,
+|vim.ui.select()|, |vim.ui.input()| or 'statusline' after neat, and whether
+each ui2 patch applied.
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
