@@ -1,72 +1,196 @@
 # neat.nvim
 
-Three small Neovim plugins, each in its own folder. Each folder has its own
-README with setup and options.
+A cmdline popup, a statusline and small UI replacements for Neovim 0.12, in one
+plugin. Every module is off until you turn it on, like snacks.nvim.
 
-| Plugin | Folder | Replaces |
+| Module | What it does | Replaces |
 | --- | --- | --- |
-| `cmdline.nvim` | [`cmdline/`](cmdline) | noice.nvim (centred cmdline popup on top of ui2) |
-| `ui.nvim` | [`ui/`](ui) | snacks.nvim / dressing.nvim (select, input, notify, indent, rename) |
-| `statusline.nvim` | [`statusline/`](statusline) | lualine.nvim |
+| `cmdline` | Centred command-line popup on top of ui2 | noice.nvim |
+| `statusline` | Small statusline that reads per-buffer caches instead of polling | lualine.nvim |
+| `select` | Telescope dropdown for `vim.ui.select`, with dressing's code-action layout; falls back to the builtin without telescope | dressing.nvim |
+| `input` | Floating `vim.ui.input` with history and completion (neo-tree's file completion works) | snacks.nvim input |
+| `notify` | `vim.notify` backends (`snacks` toasts, `native` ui2, `nvim-notify`) and LSP progress through the active one | snacks.nvim notifier |
+| `indent` | Indent and scope guides (`snacks`, without animation, or `blink` for blink.indent) | snacks.nvim indent |
+| `rename` | `require('neat.rename').on_rename_file(from, to)` sends LSP `willRenameFiles`/`didRenameFiles`; wire it to neo-tree's `FILE_MOVED`/`FILE_RENAMED` | snacks.nvim rename |
+
+![cmdline popup](dev/cmdline-demo/out/cmdline/demo.gif)
 
 ## Install
 
-`vim.pack` installs whole repositories, so every plugin is also published as its
-own branch (`cmdline`, `ui`, `statusline`) by the `split` workflow on each push
-to `main`. Pick the ones you want by branch and give each a name:
-
 ```lua
-local src = 'https://github.com/baggiponte/neat.nvim'
 vim.pack.add({
-  { src = src, version = 'cmdline', name = 'cmdline.nvim' },
-  { src = src, version = 'ui', name = 'ui.nvim' },
-  { src = src, version = 'statusline', name = 'statusline.nvim' },
+  'https://github.com/baggiponte/neat.nvim',
+  'https://github.com/MunifTanjim/nui.nvim', -- only for `cmdline`
+})
+
+require('neat').setup({
+  cmdline = { enabled = true },
+  statusline = { enabled = true },
+  select = { enabled = true },
+  input = { enabled = true },
+  notify = { enabled = true, backend = 'snacks' },
+  indent = { enabled = true, backend = 'snacks' },
 })
 ```
 
-Each branch holds only that plugin's files, with its full history.
+Instead of calling `setup()`, you can set `vim.g.neat` to the same table (or a
+function returning it) before `vim.pack.add()`, and `plugin/neat.lua` starts it.
+Set `vim.g.loaded_neat = true` to turn the plugin off entirely.
 
-`cmdline.nvim` needs [nui.nvim](https://github.com/MunifTanjim/nui.nvim) installed
-alongside it.
+Options are checked with `vim.validate()` and misspelled keys show up in
+`:checkhealth neat`. Full reference: `:h neat`.
 
-## Using them
+## Startup cost
 
-Each plugin follows `:h lua-plugin`: a small `plugin/` file defines its command
-and loads nothing else until it is used, options can come from `setup()` or
-`vim.g.<name>`, and `:checkhealth <name>` reports problems.
+`plugin/neat.lua` only defines `:Neat`. The heavy parts load on first use: the
+input window on the first `vim.ui.input()`, the snacks notifier on the first
+`vim.notify()`, the snacks indent engine with the first file buffer, and the
+cmdline popup after `VimEnter`. The statusline loads at setup because it draws
+the first screen.
 
-| Plugin | Starts | Command | Turn off |
-| --- | --- | --- | --- |
-| cmdline.nvim | when you call `setup()` or set `vim.g.cmdline` | `:Cmdline enable\|disable\|toggle` | `vim.g.loaded_cmdline = true` |
-| ui.nvim | by itself | `:Ui notifications`, `:Ui indent on\|off\|toggle` | `vim.g.loaded_ui = true` |
-| statusline.nvim | by itself | `:Statusline enable\|disable\|toggle\|refresh` | `vim.g.loaded_statusline = true` |
+## Commands and health
 
-Help is in `:h cmdline.nvim`, `:h ui.nvim` and `:h statusline.nvim`, generated
-from each README on every push to `main`.
+| Command | What it does |
+| --- | --- |
+| `:Neat cmdline enable\|disable\|toggle` | Turn the cmdline popup on or off |
+| `:Neat statusline enable\|disable\|toggle\|refresh` | Take `'statusline'` over or hand it back; `refresh` drops every cache and redraws |
+| `:Neat indent on\|off\|toggle` | Turn the snacks indent guides on or off |
+| `:Neat notifications` | Notification history of the active backend |
+
+`:checkhealth neat` checks Neovim, unknown options, the plugins each module
+needs (nui.nvim, telescope, nvim-notify, blink.indent, gitsigns,
+nvim-web-devicons), whether another plugin replaced `vim.notify`,
+`vim.ui.select`, `vim.ui.input` or `'statusline'` after neat, and whether each
+ui2 patch applied.
+
+## cmdline
+
+Messages, `:messages`, `g<` and confirm dialogs stay with Neovim's built-in ui2
+(`vim._core.ui2`, enable it with `require('vim._core.ui2').enable({})`);
+completion stays with your completion plugin.
+
+Both the popup and ui2 attach to the cmdline UI events, so without help
+the command line would be drawn twice: in the popup and on ui2's bottom line.
+neat wraps ui2's cmdline handlers (`lua/neat/cmdline/ui2.lua`):
+
+- ui2 still sees `cmdline_show`, but with empty content. It keeps track of
+  the cmdline level and prompt, so it hides showcmd and the ruler and routes
+  messages to its dialog while you type, but its bottom line stays empty.
+- `confirm()` and `:s///c` prompts open in their own float
+  (`lua/neat/cmdline/confirm.lua`): `confirm = { style = 'box' }` (top centre, like
+  noice), `'toast'` (top-right corner) or `'ui2'` (ui2's bottom line).
+- `cmdline_hide` and multi-line `cmdline_block_*` events go to ui2 as-is.
+- ui2's pager (`:messages`, `g<`, long output) opens as a centred float
+  with a border instead of a panel at the bottom (`lua/neat/cmdline/pager.lua`).
+  ui2 still owns it: `q` closes it. Set `ui2 = { pager = false }` to keep
+  the panel.
+
+Set `ui2 = { disable_cmdline = false }` to leave ui2 alone (the cmdline then
+shows in both places). This relies on ui2's private module layout; if it
+changes, neat stops patching and the popup still works.
+
+Defaults (see `lua/neat/cmdline/config/init.lua`):
+
+```lua
+cmdline = {
+  enabled = true,
+  cmdline = {
+    view = 'cmdline_popup', -- or 'cmdline' for a classic bottom line
+    opts = {},              -- view options for every format
+    format = {
+      cmdline     = { pattern = '^:', icon = '', lang = 'vim' },
+      search_down = { kind = 'search', pattern = '^/', icon = ' ', lang = 'regex' },
+      search_up   = { kind = 'search', pattern = '^%?', icon = ' ', lang = 'regex' },
+      filter      = { pattern = '^:%s*!', icon = '$', lang = 'bash' },
+      lua         = { pattern = { '^:%s*lua%s+', '^:%s*lua%s*=%s*', '^:%s*=%s*' }, icon = '', lang = 'lua' },
+      help        = { pattern = '^:%s*he?l?p?%s+', icon = '' },
+      calculator  = { pattern = '^=', icon = '', lang = 'vimnormal' },
+      input       = { view = 'cmdline_input', icon = '󰥻 ' }, -- input()
+    },
+  },
+  confirm = { style = 'box', title = ' Confirm ' }, -- 'box' | 'toast' | 'ui2'
+  ui2 = {
+    disable_cmdline = true,
+    pager = { width = 0.8, height = 0.6, border = 'rounded', title = ' Messages ' }, -- or false
+  },
+  throttle = 1000 / 30,
+  views = {},  -- override cmdline, cmdline_popup, cmdline_input
+  format = {},
+  debug = false,
+}
+```
+
+Highlight groups keep noice's names (`NoiceCmdlinePopup`,
+`NoiceCmdlinePopupBorder`, `NoiceCmdlineIcon`, ...), and the popup buffer keeps
+the `noice` filetype, so colorschemes that theme noice keep working.
+
+## statusline
+
+Same sections, palette and components as the lualine setup it replaced, with
+`man`, `neo-tree`, `oil` and `quickfix` layouts. Each component reads a
+per-buffer cache that autocmds invalidate (`DiagnosticChanged`,
+`GitSignsUpdate`, `LspAttach`, `BufWritePost`, ...), and updates go through a
+single scheduled `redrawstatus!`.
+
+Defaults live in `lua/neat/statusline/config.lua`. Sections `a`, `b`, `c`, `x`,
+`y`, `z` take built-in component names (`mode`, `branch`, `diff`, `fileicon`,
+`filepath`, `filename`, `diagnostics`, `lsp`, `location`, `progress`) or
+functions `function(ctx) return string end`. Colours are palette keys, hex
+strings or highlight tables; 256-colour fallbacks are derived for terminals
+without truecolor. The `Stl*` highlight groups are defined with
+`default = true`, so a colorscheme or your config can override them. The
+default palette is gruvbox-material.
+
+![statusline](dev/statusline-demo/out/statusline/demo.gif)
+
+## select, input, notify, indent
+
+```lua
+select = { enabled = true, trim_prompt = true, telescope = nil, format_item_override = {} },
+input = { enabled = true },          -- snacks input options: icon, icon_pos, prompt_pos, win, expand
+notify = {
+  enabled = true,
+  backend = 'snacks',                -- 'snacks' | 'native' | 'nvim-notify'
+  lsp_progress = true,               -- render $/progress with the active backend
+  snacks = {},                       -- snacks notifier options
+  nvim_notify = {},                  -- passed to require('notify').setup()
+},
+indent = {
+  enabled = true,
+  backend = 'snacks',                -- 'snacks' | 'blink'
+  snacks = {},                       -- snacks indent options
+  blink = {},                        -- passed to require('blink.indent').setup()
+},
+```
+
+![select, input, notify and indent](dev/ui-demo/ui.gif)
 
 ## Develop
 
-Work on `main`. To rebuild the per-plugin branches locally, run
-`scripts/split.sh` (add `--push` to publish them).
-
 Formatting runs on commit through [prek](https://github.com/j178/prek)
-(`prek install` once; `prek run --all-files` to format everything), using the
-StyLua version CI checks with.
+(`prek install` once; `prek run --all-files` to format everything), with the
+StyLua version CI uses.
 
-The `check` workflow runs on every push and pull request: stylua, a LuaLS
-type check (errors only), and `tests/smoke.lua`, which loads each plugin
-headless the way `vim.pack` does and runs its command and health check:
+The `check` workflow runs stylua, a LuaLS type check (errors only), and
+`tests/smoke.lua`, which loads neat.nvim headless the way `vim.pack` does and
+exercises each module, `:Neat` and `:checkhealth neat`:
 
 ```sh
-SMOKE=statusline nvim --headless --clean --cmd "set rtp^=$PWD/statusline" -c 'luafile tests/smoke.lua'
+git clone --depth 1 https://github.com/MunifTanjim/nui.nvim deps/nui.nvim
+nvim --headless --clean --cmd "set rtp^=$PWD/deps/nui.nvim" --cmd "set rtp^=$PWD" -c 'luafile tests/smoke.lua'
 ```
 
-## Credits
+`dev/` holds the demo recordings and the review tooling used while replacing
+noice, snacks, dressing and lualine.
 
-`cmdline.nvim` is a trimmed copy of [noice.nvim](https://github.com/folke/noice.nvim)
-by Folke Lemaitre: the cmdline popup, its views and text rendering are noice's
-work. `ui.nvim` adapts parts of [snacks.nvim](https://github.com/folke/snacks.nvim)
-and [dressing.nvim](https://github.com/stevearc/dressing.nvim), and
-`statusline.nvim` adapts [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim).
-Licences and notices for the adapted code are in each plugin's `LICENSES/` and
-`NOTICE`.
+## Credits and licence
+
+neat.nvim is Apache-2.0. The cmdline module is a trimmed copy of
+[noice.nvim](https://github.com/folke/noice.nvim) by Folke Lemaitre; `input`,
+`notify`, `indent`, `rename` and the window code adapt
+[snacks.nvim](https://github.com/folke/snacks.nvim); `select` adapts
+[dressing.nvim](https://github.com/stevearc/dressing.nvim) by Steven
+Arcangeli; the statusline adapts
+[lualine.nvim](https://github.com/nvim-lualine/lualine.nvim). See `NOTICE` and
+`LICENSES/`; every adapted file starts with a header naming its source and what
+changed.

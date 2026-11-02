@@ -1,0 +1,35 @@
+neat.nvim
+Copyright 2026 Luca Baggi
+
+Licensed under the Apache License, Version 2.0 (see LICENSE). This project
+contains code adapted from the projects below. Every adapted file starts with
+a header naming its source file, the upstream commit and what was changed.
+
+noice.nvim - https://github.com/folke/noice.nvim
+  Copyright (c) Folke Lemaitre
+  Apache License, Version 2.0 (LICENSES/noice-Apache-2.0.txt)
+  Adapted at 7bfd942445fb63089b59f97ca487d605e715f155:
+    lua/neat/cmdline/**
+
+snacks.nvim - https://github.com/folke/snacks.nvim
+  Copyright (c) Folke Lemaitre
+  Apache License, Version 2.0 (LICENSES/snacks-Apache-2.0.txt)
+  Adapted at v2.22.0 (5eac729fa290248acfe10916d92a5ed5e5c0f9ed):
+    lua/neat/win.lua, lua/neat/util.lua, lua/neat/input/*,
+    lua/neat/notify/notifier.lua, lua/neat/indent/snacks.lua,
+    lua/neat/indent/scope.lua, lua/neat/rename.lua
+
+dressing.nvim - https://github.com/stevearc/dressing.nvim
+  Copyright (c) 2021 Steven Arcangeli
+  MIT License (LICENSES/dressing-MIT.txt)
+  Adapted at 2d7c2db2507fa3c4956142ee607431ddb2828639:
+    lua/neat/select/init.lua, lua/neat/select/telescope.lua
+
+lualine.nvim - https://github.com/nvim-lualine/lualine.nvim
+  Copyright (c) 2020 hoob3rt
+  MIT License (LICENSES/lualine-MIT.txt)
+  Adapted at 221ce6b2d999187044529f49da6554a92f740a96:
+    lua/neat/statusline/{cache,components,config,cterm,extensions,highlights}.lua
+
+The cmdline module depends on nui.nvim (https://github.com/MunifTanjim/nui.nvim,
+MIT licence) at runtime; no nui.nvim code is copied into this repository.

@@ -1,11 +1,11 @@
 # Run with prek (https://github.com/j178/prek), a drop-in pre-commit:
 #   prek install        # once, installs the git hook
 #   prek run --all-files
-# stylua picks up each plugin's own config (cmdline/.stylua.toml,
-# ui/stylua.toml, statusline/.stylua.toml) relative to the file it formats.
+# stylua uses .stylua.toml, and lua/neat/statusline/.stylua.toml for the
+# statusline (single quotes), relative to the file it formats.
 repos:
   - repo: https://github.com/JohnnyMorganz/StyLua
     rev: v2.6.0
     hooks:
       - id: stylua-github
-        files: ^(cmdline|ui|statusline|tests)/.*\.lua$
+        files: ^(lua|plugin|tests)/.*\.lua$

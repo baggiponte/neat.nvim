@@ -1,0 +1,6 @@
+dev/statusline-demo/out/baseline/demo.gif
+dev/statusline-demo/out/*/run.tape
+dev/statusline-review/feedback.json
+dev/statusline-review/server.*
+!dev/statusline-review/server.py
+dev/statusline-review/.feedback.*
