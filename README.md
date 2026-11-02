@@ -42,8 +42,9 @@ cmdline.nvim wraps ui2's cmdline handlers (`lua/cmdline/ui2.lua`):
 - ui2 still sees `cmdline_show`, but with empty content. It keeps track of
   the cmdline level and prompt, so it hides showcmd and the ruler and routes
   messages to its dialog while you type, but its bottom line stays empty.
-- `confirm()` and `:s///c` prompts go to ui2 in full; the popup stays closed
-  and ui2 draws the choices at the bottom, like any other message.
+- `confirm()` and `:s///c` prompts open in their own float
+  (`lua/cmdline/confirm.lua`): `confirm = { style = 'box' }` (top centre, like
+  noice), `'toast'` (top-right corner) or `'ui2'` (ui2's bottom line).
 - `cmdline_hide` and multi-line `cmdline_block_*` events go to ui2 as-is.
 - ui2's pager (`:messages`, `g<`, long output) opens as a centred float
   with a border instead of a panel at the bottom (`lua/cmdline/pager.lua`).
@@ -74,6 +75,7 @@ Defaults, see `lua/cmdline/config/init.lua`:
       input       = { view = 'cmdline_input', icon = '󰥻 ' }, -- input()
     },
   },
+  confirm = { style = 'box', title = ' Confirm ' }, -- 'box' | 'toast' | 'ui2'
   ui2 = {
     disable_cmdline = true,
     pager = { width = 0.8, height = 0.6, border = 'rounded', title = ' Messages ' }, -- or false
@@ -102,6 +104,7 @@ plugins that already handle noice's popup keep working.
 ```sh
 demo/record.sh baseline   # NVIM_APPNAME=nvim (noice.nvim)
 demo/record.sh cmdline    # NVIM_APPNAME=nvim-cmdline (this plugin)
+demo/record.sh cmdline-toast dialogs   # dialogs.tape: :messages, confirm(), :s///c
 ```
 
 Recordings (GIF, MP4 and one PNG per step) are in `demo/out/<name>/`.

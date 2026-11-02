@@ -48,6 +48,12 @@ function M.defaults()
         title = " Messages ",
       },
     },
+    -- confirm() and `:s///c` prompts
+    ---@type CmdlineConfirmOptions
+    confirm = {
+      style = "box", -- "box": centred near the top, as in noice; "toast": top-right corner; "ui2": ui2's bottom line
+      title = " Confirm ",
+    },
     throttle = 1000 / 30, -- how often to check for updates when Neovim is not blocking
     ---@type table<string, NoiceViewOptions>
     views = {}, -- override the built-in views, see cmdline.config.views

@@ -21,7 +21,8 @@ h2{font-size:17px;margin:0 0 6px}
 code{background:var(--code);padding:1px 4px;border-radius:4px;font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace}
 pre{background:var(--code);padding:8px 10px;border-radius:6px;overflow-x:auto;font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0}
-@media(max-width:800px){.pair{grid-template-columns:1fr}}
+.pair.quad{grid-template-columns:1fr 1fr}
+@media(max-width:800px){.pair,.pair.quad{grid-template-columns:1fr}}
 figure{margin:0}figure img,figure video{width:100%;border:1px solid var(--line);border-radius:6px;display:block;background:#1d1f21}
 figcaption{font-size:12.5px;color:var(--mute);margin-bottom:4px;font-weight:600}
 .dec{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
@@ -80,17 +81,19 @@ const ITEMS = [
    body:`<p class="same">Same red E117 message, drawn by ui2 in both.</p><p class="diff">Today the failed command (<code>:call NoSuchFunction()</code>) also stays on the bottom line under the error.</p>`},
   {id:"input", title:"input() prompt", frame:"11-input.png",
    body:`<p class="same">Prompt becomes the popup title, with the input icon, as today.</p><p class="diff">Today the prompt is also echoed on the bottom line.</p>`},
-  {id:"messages", title:":messages", frame:"12-messages.png",
-   body:`<p class="diff">Today <code>:messages</code> opens noice's history split above the statusline. In the variant it is ui2's pager at the bottom of the screen, listing the same history (the <code>:lua</code> output and the E117 error); <code>q</code> closes it and <code>g&lt;</code> reopens the last output.</p>`},
   {id:"long", title:"Long command", frame:"13-long.png",
    body:`<p class="same">The popup grows to fit and scrolls the same way.</p>`},
-  {id:"confirm", title:"confirm() and :s///c prompts", kind:"text",
-   body:`<p class="diff">Today <code>confirm()</code> opens noice's "Confirm" popup near the top with the buttons centred. In the variant ui2 draws it on the bottom line, like Neovim without plugins:</p>
-<pre>Save changes?
-[Y]es, (N)o:</pre>
-<p><code>:%s/x/y/gc</code> looks the same as today (bottom line). Try both with <code>nvim-review cmdline</code>. Say "Needs changes" if you want the centred Confirm popup back; it would be another ~60 lines copied from noice.</p>`},
+  {id:"messages-float", title:":messages as a floating window (round 2)", kind:"multi", frame:"d1-messages.png", configs:["baseline","cmdline"],
+   body:`<p>You asked for <code>:messages</code> as a floating pane. ui2's pager now opens centred with a border and the popup's colours; <code>q</code> closes it, <code>g&lt;</code> opens it too. Left is today (noice's split plus snacks toasts), right is the new float. Bringing back noice's own history popup would look almost the same, so I went with ui2's pager.</p>`},
+  {id:"confirm-style", title:"confirm() prompt: pick a style (round 2)", kind:"multi", frame:"d2-confirm.png", configs:["baseline","cmdline","cmdline-toast","cmdline-ui2"],
+   body:`<p><code>:call confirm("Save changes?", "&amp;Yes\\n&amp;No\\n&amp;Cancel", 2)</code>. From left: today (noice), <b>box</b> (top centre, like noice), <b>toast</b> (top-right corner), and ui2's bottom line (round 1). Set with <code>confirm = { style = 'box' | 'toast' | 'ui2' }</code>. Say which one in the comment.</p>`},
+  {id:"substitute-style", title:":%s///gc prompt with the same styles (round 2)", kind:"multi", frame:"d3-substitute.png", configs:["baseline","cmdline","cmdline-toast","cmdline-ui2"],
+   body:`<p>Same four configs for <code>:%s/total/sum/gc</code>. Today noice shows this one as an "Input" popup; box and toast show the question with its choices as buttons.</p>`},
+  {id:"dialogs-video", title:"Messages and prompts, as video (round 2)", kind:"multivideo", frame:"dialogs.mp4", configs:["baseline","cmdline","cmdline-toast","cmdline-ui2"],
+   body:`<p>The whole sequence for each config. Try them by hand with <code>review/nvim-review cmdline</code>, <code>cmdline-toast</code> or <code>cmdline-ui2</code>.</p>`},
 ];
 
+const LABELS = {"baseline":"Today (noice)","cmdline":"cmdline.nvim (box)","cmdline-toast":"cmdline.nvim (toast)","cmdline-ui2":"cmdline.nvim (ui2 bottom line)"};
 const state = {updated:null, overall_comment:"", items:ITEMS.map(i=>({id:i.id,title:i.title,section:"cmdline.nvim",decision:null,comment:""}))};
 const byId = id => state.items.find(x=>x.id===id);
 const esc = s => s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -103,6 +106,10 @@ function render(){
     let media="";
     if(it.kind==="video"){
       media=`<div class="pair"><figure><figcaption>Today (noice)</figcaption><video src="demo/baseline/${it.frame}" controls muted loop playsinline></video></figure><figure><figcaption>cmdline.nvim</figcaption><video src="demo/cmdline/${it.frame}" controls muted loop playsinline></video></figure></div>`;
+    }else if(it.kind==="multi"){
+      media=`<div class="pair${it.configs.length>2?" quad":""}">`+it.configs.map(c=>`<figure><figcaption>${it.configs.length===2&&c==="cmdline"?"cmdline.nvim":LABELS[c]}</figcaption><img loading="lazy" src="demo/${c}/frames/${it.frame}" alt="${esc(LABELS[c])}"></figure>`).join("")+`</div>`;
+    }else if(it.kind==="multivideo"){
+      media=`<div class="pair quad">`+it.configs.map(c=>`<figure><figcaption>${LABELS[c]}</figcaption><video src="demo/${c}/${it.frame}" controls muted loop playsinline></video></figure>`).join("")+`</div>`;
     }else if(it.frame){
       media=`<div class="pair"><figure><figcaption>Today (noice)</figcaption><img loading="lazy" src="demo/baseline/frames/${it.frame}" alt="today: ${esc(it.title)}"></figure><figure><figcaption>cmdline.nvim</figcaption><img loading="lazy" src="demo/cmdline/frames/${it.frame}" alt="cmdline.nvim: ${esc(it.title)}"></figure></div>`;
     }

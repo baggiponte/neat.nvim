@@ -169,8 +169,8 @@ end
 M.cmdlines = {}
 
 -- confirm() and `:s///c` ask for a choice through the cmdline, with prompts
--- such as "[Y]es, (N)o: " or "replace with x? (y)es/(n)o/...". Like other
--- messages, ui2 draws those dialogs.
+-- such as "[Y]es, (N)o: " or "replace with x? (y)es/(n)o/...". Those are
+-- drawn by cmdline.confirm (or by ui2 with `confirm.style = "ui2"`).
 ---@param prompt? string
 function M.is_confirm(prompt)
   return prompt ~= nil and prompt:find("[%(%[]%w[%)%]]%w") ~= nil
@@ -178,6 +178,10 @@ end
 
 function M.on_show(event, content, pos, firstc, prompt, indent, level)
   if M.is_confirm(prompt) then
+    local Confirm = require("cmdline.confirm")
+    if Confirm.enabled() then
+      Confirm.show(prompt)
+    end
     return
   end
   local c = Cmdline({
@@ -199,6 +203,10 @@ function M.on_show(event, content, pos, firstc, prompt, indent, level)
 end
 
 function M.on_hide(_, level)
+  local Confirm = require("cmdline.confirm")
+  if Confirm.is_visible() then
+    Confirm.hide()
+  end
   if M.cmdlines[level] then
     M.cmdlines[level] = nil
     local active = M.active

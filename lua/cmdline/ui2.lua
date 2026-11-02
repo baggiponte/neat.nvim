@@ -12,7 +12,8 @@
 -- - `cmdline_show` still runs, but with empty content, so ui2 tracks the
 --   cmdline level and prompt (it hides showcmd/ruler and routes messages to
 --   its dialog window while a prompt is open) without drawing the text.
---   confirm() prompts are the exception: ui2 draws them in full;
+--   With `confirm.style = "ui2"`, confirm() and `:s///c` prompts are the
+--   exception: ui2 draws them in full;
 -- - `cmdline_pos` and `cmdline_special_char` are dropped (the cursor stays
 --   in ui2's window for confirm(), which only waits for a key);
 -- - everything else, `cmdline_hide` and multi-line `cmdline_block_*`
@@ -49,7 +50,7 @@ local function patch()
     return false
   end
   local function cmdline_show(content, pos, firstc, prompt, indent, level, hl_id)
-    if require("cmdline.ui.cmdline").is_confirm(prompt) then
+    if require("cmdline.ui.cmdline").is_confirm(prompt) and not require("cmdline.confirm").enabled() then
       return real.cmdline_show(content, pos, firstc, prompt, indent, level, hl_id)
     end
     real.cmdline_show({}, 0, "", "", 0, level, 0)

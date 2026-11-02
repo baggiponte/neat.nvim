@@ -41,6 +41,7 @@ function M.disable()
   require("cmdline.ui").disable()
   require("cmdline.ui2").restore()
   require("cmdline.pager").restore()
+  require("cmdline.confirm").restore()
 end
 
 function M.enable()
@@ -55,6 +56,7 @@ function M.enable()
   Config._running = true
   require("cmdline.ui2").setup(Config.options.ui2)
   require("cmdline.pager").setup(Config.options.ui2.pager)
+  require("cmdline.confirm").setup(Config.options.confirm)
   require("cmdline.ui").enable()
   require("cmdline.render").enable()
 end
