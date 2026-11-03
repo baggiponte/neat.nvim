@@ -44,6 +44,8 @@ local tests = {}
 function tests.off()
   check(vim.fn.exists(":Neat") == 2, ":Neat exists")
   check(not loaded("neat"), "nothing is required without vim.g.neat")
+  check(vim.fn.maparg("<Plug>(neat-spell-suggest)", "n") ~= "", "<Plug>(neat-spell-suggest) exists without setup()")
+  check(vim.fn.maparg("z=", "n") == "", "z= is not mapped without setup()")
   require("neat").setup({})
   local modules = { "neat.statusline", "neat.notify", "neat.select", "neat.indent", "neat.cmdline", "neat.spell" }
   for _, mod in ipairs(modules) do

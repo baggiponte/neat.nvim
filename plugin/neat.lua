@@ -1,5 +1,5 @@
--- neat.nvim entry point. Kept small: it defines :Neat and, when vim.g.neat is
--- set, starts the modules it enables. Nothing else loads until it is used.
+-- neat.nvim entry point. Kept small: it defines :Neat and the <Plug> mappings
+-- and, when vim.g.neat is set, starts the modules it enables. Nothing else loads until it is used.
 -- `vim.g.loaded_neat = true` turns the plugin off.
 if vim.g.loaded_neat then
   return
@@ -93,6 +93,11 @@ end, {
     return candidates
   end,
 })
+
+-- <Plug> mappings work without setup(); map them to any key you like.
+vim.keymap.set("n", "<Plug>(neat-spell-suggest)", function()
+  require("neat.spell").suggest()
+end, { desc = "neat: spelling suggestions through vim.ui.select" })
 
 if vim.g.neat ~= nil and not require("neat").did_setup then
   require("neat").setup()

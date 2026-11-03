@@ -126,11 +126,11 @@ spell                                                             *neat-spell*
     count (`3z=`) still picks directly, and the word is replaced in place
     without touching registers.
 
-    `keymap` (default true) maps `z=` to `<Plug>(neat-spell-suggest)`,
-    unless `z=` is already mapped. Set it to false and map the <Plug> key
-    yourself to use another key: >lua
-        vim.keymap.set('n', '<leader>z', '<Plug>(neat-spell-suggest)')
-<
+    *<Plug>(neat-spell-suggest)* is defined at startup and needs no setup,
+    so you can map it yourself instead of enabling the module: >lua
+        vim.keymap.set('n', 'z=', '<Plug>(neat-spell-suggest)')
+<   Enabling the module (`spell = { enabled = true }`) maps `z=` for you,
+    unless `z=` is already mapped or `keymap` is false.
 
 input                                                             *neat-input*
     |vim.ui.input()| in a floating window with history and completion.

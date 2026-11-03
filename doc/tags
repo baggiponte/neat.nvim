@@ -3,6 +3,7 @@
 :Neat-indent	neat.txt	/*:Neat-indent*
 :Neat-notifications	neat.txt	/*:Neat-notifications*
 :Neat-statusline	neat.txt	/*:Neat-statusline*
+<Plug>(neat-spell-suggest)	neat.txt	/*<Plug>(neat-spell-suggest)*
 g:loaded_neat	neat.txt	/*g:loaded_neat*
 g:neat	neat.txt	/*g:neat*
 neat	neat.txt	/*neat*
