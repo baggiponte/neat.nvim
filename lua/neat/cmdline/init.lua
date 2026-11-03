@@ -42,6 +42,14 @@ function M.setup(opts)
   end
   opts = resolve(opts)
 
+  -- 'cmdheight' and ui2 right away, so the screen does not change under you
+  -- when the popup loads after VimEnter
+  local ui2 = type(opts.ui2) == "table" and opts.ui2 or {}
+  _G.require("neat.cmdline.ui2").start({
+    enable = ui2.enable ~= false,
+    cmdheight = ui2.cmdheight == nil and 0 or ui2.cmdheight,
+  })
+
   local function load()
     require("neat.cmdline.util").try(function()
       require("neat.cmdline.config").setup(opts)
