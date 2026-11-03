@@ -191,7 +191,7 @@ function tests.cmdline()
 
   -- z= / inputlist(): the list arrives as a "confirm" message before a number prompt
   shown = {}
-  fake.msg.msg_show("confirm", chunks("Change \"teh\" to:\n 1 \"the\"\n 2 \"ten\""), false, true, false, 1, "")
+  fake.msg.msg_show("confirm", chunks('Change "teh" to:\n 1 "the"\n 2 "ten"'), false, true, false, 1, "")
   check(#shown == 0, "z=: the list waits for its prompt")
   local number_prompt = "Type number and <Enter> or click with the mouse (q or empty cancels): "
   Cmdline.on_show("cmdline_show", {}, 0, "", number_prompt, 0, 1)

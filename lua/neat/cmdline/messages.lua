@@ -105,8 +105,9 @@ local function msg_show(kind, content, replace_last, history, append, ...)
   if kind == "confirm" then
     local Confirm = require("neat.cmdline.confirm")
     if Confirm.enabled() then
+      local rest = vim.F.pack_len(...)
       return Confirm.on_message(content, function()
-        M.forward(nil, kind, content, replace_last, history, append, ...)
+        M.forward(nil, kind, content, replace_last, history, append, vim.F.unpack_len(rest))
       end)
     end
   end
