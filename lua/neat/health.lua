@@ -4,7 +4,7 @@ local M = {}
 local health = vim.health
 
 local known = {
-  select = { enabled = true, trim_prompt = true, telescope = true, format_item_override = true },
+  select = { enabled = true, trim_prompt = true, telescope = true, format_item_override = true, spell = true },
   input = {
     enabled = true,
     icon = true,

@@ -11,10 +11,12 @@ local M = {}
 ---@field trim_prompt? boolean drop a trailing ":" from the prompt
 ---@field telescope? table telescope picker opts; defaults to the dropdown theme
 ---@field format_item_override? table<string, fun(item: any): string>
+---@field spell? boolean map z= to a picker of spelling suggestions (needs telescope)
 local defaults = {
   trim_prompt = true,
   telescope = nil,
   format_item_override = {},
+  spell = true,
 }
 
 local config = defaults ---@type ui.select.Config
@@ -111,8 +113,15 @@ function M.setup(opts)
   vim.validate("select.trim_prompt", config.trim_prompt, "boolean")
   vim.validate("select.telescope", config.telescope, "table", true)
   vim.validate("select.format_item_override", config.format_item_override, "table")
+  vim.validate("select.spell", config.spell, "boolean")
   original = original or vim.ui.select
   vim.ui.select = M.select
+  -- leave z= alone when the user mapped it
+  if config.spell and vim.fn.maparg("z=", "n") == "" then
+    vim.keymap.set("n", "z=", function()
+      require("neat.select.spell").suggest()
+    end, { desc = "neat: spelling suggestions in a picker" })
+  end
 end
 
 return M
