@@ -152,5 +152,39 @@ function M.progress(ctx)
   return string.format('%2d%%%%', math.floor(cur / total * 100))
 end
 
+-- what the cmdline row used to show ------------------------------------------
+-- With 'cmdheight' 0 there is no row for 'showcmd', "recording @q" or the
+-- search count, so these put them in the statusline.
+
+--- "recording @q" while a macro is being recorded.
+function M.recording(ctx)
+  if not ctx.active then
+    return ''
+  end
+  local reg = vim.fn.reg_recording()
+  return reg ~= '' and ('recording @' .. reg) or ''
+end
+
+--- "[3/12]" for the last search while its matches are highlighted.
+function M.searchcount(ctx)
+  if not ctx.active or vim.v.hlsearch == 0 then
+    return ''
+  end
+  local ok, sc = pcall(vim.fn.searchcount, { maxcount = 999, timeout = 50 })
+  if not ok or type(sc) ~= 'table' or (sc.total or 0) == 0 then
+    return ''
+  end
+  local total = sc.incomplete == 2 and ('>' .. sc.maxcount) or tostring(sc.total)
+  return ('[%d/%s]'):format(sc.current, total)
+end
+
+--- Pending keys of a Normal mode command ('showcmd'); needs 'showcmdloc' = 'statusline'.
+function M.showcmd(ctx)
+  if not ctx.active or vim.o.showcmdloc ~= 'statusline' then
+    return ''
+  end
+  return '%S'
+end
+
 M._hl = hl
 return M

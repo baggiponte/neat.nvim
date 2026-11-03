@@ -92,9 +92,9 @@ M.defaults = {
     a = { 'mode' },
     b = { 'branch', 'diff' },
     c = { 'fileicon', 'filepath' },
-    x = { 'diagnostics' },
+    x = { 'showcmd', 'recording', 'diagnostics' },
     y = { 'lsp_progress', 'lsp' },
-    z = { 'location', 'progress' },
+    z = { 'searchcount', 'location', 'progress' },
   },
   inactive_sections = {
     c = { 'filename' },
