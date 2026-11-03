@@ -46,8 +46,21 @@ function M.check()
   end
 
   health.start("cmdline: ui2")
-  if not package.loaded["vim._core.ui2"] then
-    health.info("ui2 is not loaded; nothing to patch (enable it with require('vim._core.ui2').enable({}))")
+  -- neat leaves 'cmdheight' and ui2 to your config; say when they don't suit the popup
+  if vim.o.cmdheight > 0 then
+    health.warn(
+      ("'cmdheight' is %d: the popup draws the cmdline, so that row stays empty"):format(vim.o.cmdheight),
+      "Set vim.o.cmdheight = 0 in your config"
+    )
+  else
+    health.ok("'cmdheight' is 0")
+  end
+  local ui2 = package.loaded["vim._core.ui2"]
+  if not (type(ui2) == "table" and type(ui2.msg) == "table") then
+    health.warn(
+      "ui2 is not enabled; messages use the classic message area",
+      "Enable it in your config: require('vim._core.ui2').enable({ msg = { targets = 'msg' } })"
+    )
     return
   end
   if not Config.is_running() then
@@ -79,18 +92,6 @@ function M.check()
   )
   if opts.messages.enabled and not require("neat.cmdline.messages").can_notify() then
     health.info("messages: toasts need neat's `notify` module with a backend that shows toasts; messages stay with ui2")
-  end
-  if opts.ui2.cmdheight == false and vim.o.cmdheight > 0 then
-    health.info(
-      ("'cmdheight' is %d; the popup does not need a cmdline row, so vim.o.cmdheight = 0 in your config suits it"):format(
-        vim.o.cmdheight
-      )
-    )
-  end
-  if opts.ui2.cmdheight ~= false and vim.o.cmdheight ~= opts.ui2.cmdheight then
-    health.warn(
-      ("'cmdheight' is %d, neat set %d: something changed it later"):format(vim.o.cmdheight, opts.ui2.cmdheight)
-    )
   end
 end
 

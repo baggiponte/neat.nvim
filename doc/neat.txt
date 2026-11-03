@@ -70,10 +70,10 @@ with the first file buffer, the cmdline popup after |VimEnter|.
 
 cmdline                                                         *neat-cmdline*
     Centred command-line popup on top of ui2 (`vim._core.ui2`). ui2 and
-    'cmdheight' are left to your config; set `ui2.enable = true` to have
-    neat turn ui2 on, and `ui2.cmdheight = 0` to have it set 'cmdheight'.
-    The popup needs no cmdline row, so 'cmdheight' 0 with ui2's "msg"
-    target suits it: >lua
+    'cmdheight' are yours to set: neat never turns ui2 on or changes
+    'cmdheight', and |:checkhealth| warns when they don't suit the popup.
+    It needs no cmdline row, so 'cmdheight' 0 with ui2's "msg" target is
+    the setup it is made for: >lua
         vim.o.cmdheight = 0
         require('vim._core.ui2').enable({ msg = { targets = 'msg' } })
 <   Messages are routed by |ui-messages| kind
@@ -85,7 +85,7 @@ cmdline                                                         *neat-cmdline*
     float; `z=` and |inputlist()| lists stay with ui2's dialog. Options:
     `cmdline` (view, format), `messages` (`enabled`, `routes`,
     `pager_lines`), `confirm` (`style` = "center", "box", "toast" or
-    "ui2"), `ui2` (`enable`, `cmdheight`, `disable_cmdline`, `pager`),
+    "ui2"), `ui2` (`disable_cmdline`, `pager`),
     `throttle`, `views`, `format`, `debug`. Defaults are in
     lua/neat/cmdline/config/init.lua. Highlight groups keep noice's names
     (`NoiceCmdlinePopup`, ...).
