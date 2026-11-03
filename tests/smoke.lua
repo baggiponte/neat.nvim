@@ -245,9 +245,16 @@ function tests.ui()
   vim.wo.spell = true
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { "teh cat" })
   vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  vim.fn.setreg('"', "kept")
   require("neat.spell").suggest()
   check(got ~= nil and #got.items > 0 and got.prompt == 'Change "teh" to', "z= passes suggestions to vim.ui.select")
   check(got ~= nil and vim.api.nvim_get_current_line() == got.items[1] .. " cat", "z= replaces the word with the pick")
+  check(vim.fn.getreg('"') == "kept", "z= leaves the unnamed register alone")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "the  wrold" })
+  vim.api.nvim_win_set_cursor(0, { 1, 4 }) -- between the words: <cword> is the next one
+  require("neat.spell").suggest()
+  check(got ~= nil and got.prompt == 'Change "wrold" to', "z= between words takes the next word, like <cword>")
+  check(vim.api.nvim_get_current_line() == "the  " .. got.items[1], "z= replaces only that word")
   vim.ui.select = select
   vim.cmd("bwipeout!")
   vim.cmd("edit tests/smoke.lua")

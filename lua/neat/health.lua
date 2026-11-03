@@ -12,7 +12,7 @@ local known = {
     builtin = true,
     format_item_override = true,
   },
-  spell = { enabled = true },
+  spell = { enabled = true, keymap = true },
   input = {
     enabled = true,
     icon = true,
@@ -109,8 +109,10 @@ function M.check()
     health.info("off (set `enabled = true`)")
   else
     local map = vim.fn.maparg("z=", "n", false, true)
-    if map.callback == require("neat.spell").suggest then
+    if map.rhs == "<Plug>(neat-spell-suggest)" then
       health.ok("z= lists suggestions through vim.ui.select")
+    elseif (neat.options.spell or {}).keymap == false then
+      health.info("`keymap = false`: map <Plug>(neat-spell-suggest) yourself")
     else
       health.warn("z= is mapped by something else", "neat leaves an existing z= mapping alone")
     end
