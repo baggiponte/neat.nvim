@@ -21,12 +21,17 @@ M.defaults = {
   ScrollbarThumb = "PmenuThumb", -- Scrollbar thumb
 }
 
+--- Register `Noice<hl_group>` as a default link to `link`.
+---@param hl_group string
+---@param link string
 function M.add(hl_group, link)
   if not M.defaults[hl_group] then
     M.defaults[hl_group] = link
   end
 end
 
+---@param hl_group string
+---@return vim.api.keyset.get_hl_info
 function M.get_link(hl_group)
   local opts = vim.api.nvim_get_hl(0, { name = hl_group, link = false })
   if vim.tbl_isempty(opts) then
@@ -45,7 +50,7 @@ function M.setup()
         opts = M.get_link(link)
       end
 
-      vim.api.nvim_set_hl(0, "Noice" .. hl, opts)
+      vim.api.nvim_set_hl(0, "Noice" .. hl, opts --[[@as vim.api.keyset.highlight]])
     end
   end
 end

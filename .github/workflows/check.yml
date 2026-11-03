@@ -45,25 +45,25 @@ jobs:
   luals:
     name: type check
     runs-on: ubuntu-24.04
+    env:
+      LUALS_VERSION: 3.18.1 # bump on purpose: new versions add diagnostics
     steps:
       - uses: actions/checkout@v7
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
           version: stable
+      - name: Fetch nui.nvim (types for the cmdline module)
+        run: git clone --depth 1 https://github.com/MunifTanjim/nui.nvim deps/nui.nvim
       - name: Install lua-language-server
-        env:
-          GH_TOKEN: ${{ github.token }} # unauthenticated API calls get rate-limited (403)
         run: |
-          url=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
-            https://api.github.com/repos/LuaLS/lua-language-server/releases/latest \
-            | jq -r '.assets[] | select(.name | endswith("linux-x64.tar.gz")) | .browser_download_url')
           mkdir -p "$RUNNER_TEMP/luals"
-          curl -fsSL "$url" | tar xz -C "$RUNNER_TEMP/luals"
+          curl -fsSL "https://github.com/LuaLS/lua-language-server/releases/download/$LUALS_VERSION/lua-language-server-$LUALS_VERSION-linux-x64.tar.gz" \
+            | tar xz -C "$RUNNER_TEMP/luals"
           echo "$RUNNER_TEMP/luals/bin" >> "$GITHUB_PATH"
-      - name: Check (errors only)
+      - name: Check (warnings and errors)
         run: |
           export VIMRUNTIME=$(nvim --clean --headless -c 'lua io.write(vim.env.VIMRUNTIME)' -c q)
-          for d in lua plugin tests; do
-            lua-language-server --check "$PWD/$d" --configpath "$PWD/.luarc.json" --checklevel=Error
-          done
+          lua-language-server --check "$PWD" --configpath "$PWD/.luarc.json" --checklevel=Warning
+      - name: Every function documents its parameters
+        run: nvim --headless --clean -l tests/annotations.lua

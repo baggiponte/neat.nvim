@@ -6,6 +6,8 @@
 -- Scenarios: off, statusline, ui, cmdline (cmdline needs nui.nvim on 'rtp' too).
 -- Runs before plugin/ (so it can set vim.g.neat), tests after VimEnter, and
 -- exits non-zero on the first failure.
+-- Tests stub functions (vim.ui.select, vim.notify, ...) and pass wrong types on purpose.
+---@diagnostic disable: duplicate-set-field
 local name = assert(os.getenv("SMOKE"), "set SMOKE to off, statusline, ui or cmdline")
 local failures = 0
 -- Neovim 0.12 ships a default 'statusline'; "off" must leave it as it was
@@ -49,11 +51,16 @@ function tests.off()
   end
   check(vim.go.statusline == initial_statusline, "'statusline' is untouched")
   vim.cmd("helptags doc")
-  check(pcall(vim.cmd, "help neat"), ":h neat")
-  check(pcall(vim.cmd, "help :Neat-indent"), ":h :Neat-indent")
+  check(pcall(vim.cmd.help, "neat"), ":h neat")
+  check(pcall(vim.cmd.help, ":Neat-indent"), ":h :Neat-indent")
   vim.cmd("helpclose")
   check(not pcall(require("neat").setup, { notify = { enabled = "yes" } }), "setup() rejects a non-boolean enabled")
   check(#health_errors() == 0, ":checkhealth neat has no errors")
+  require("neat").setup({ select = { backnd = "telescope" } })
+  vim.cmd("checkhealth neat")
+  local report = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  vim.cmd("bwipeout!")
+  check(report:find("select.backnd", 1, true) ~= nil, ":checkhealth neat lists a misspelled option")
 end
 
 function tests.statusline()
@@ -76,6 +83,7 @@ function tests.statusline()
   check(sl.render():find("indexing", 1, true) == nil, "progress clears on end")
   sl.setup({ lsp_scope = "buffer" })
   check(sl.config.lsp_scope == "buffer", "setup() again applies new options")
+  ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
   check(not pcall(sl.setup, { lsp_scope = 1 }), "setup() rejects a wrong type")
   sl.setup({})
 
@@ -109,6 +117,44 @@ function tests.statusline()
   check(loads == 1, "nvim-web-devicons is required once, after the draw")
   check(sl.render():find("@icon@", 1, true) ~= nil, "the file icon shows once devicons is loaded")
   vim.cmd("bwipeout!")
+
+  -- providers of your own: icons and git status
+  local status = { head = "feature", added = 2 } ---@type neat.statusline.GitStatus
+  sl.setup({
+    providers = {
+      icons = {
+        load = function()
+          return true
+        end,
+        get = function(_, ft)
+          return "<" .. ft .. ">", nil
+        end,
+      },
+      git = {
+        status = function()
+          return status
+        end,
+        events = { { event = "User", pattern = "SmokeGit" } },
+      },
+    },
+  })
+  vim.cmd("edit tests/smoke.lua")
+  sl.render()
+  vim.wait(500, function()
+    return sl.render():find("<lua>", 1, true) ~= nil
+  end)
+  check(sl.render():find("<lua>", 1, true) ~= nil, "providers.icons: your provider's icon shows")
+  check(sl.render():find("feature", 1, true) ~= nil, "providers.git: your provider's branch shows")
+  check(sl.render():find("+2", 1, true) ~= nil, "providers.git: your provider's diff shows")
+  status = { head = "other" }
+  vim.api.nvim_exec_autocmds("User", { pattern = "SmokeGit" })
+  check(sl.render():find("other", 1, true) ~= nil, "providers.git: its events drop the cached status")
+  ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
+  check(not pcall(sl.setup, { providers = { icons = "nope" } }), "providers: an unknown name is rejected")
+  sl.setup({ providers = { icons = false, git = false } })
+  check(sl.render():find("<lua>", 1, true) == nil, "providers.icons = false: no icon")
+  vim.cmd("bwipeout!")
+  sl.setup({})
   vim.bo.filetype = "neo-tree"
   check(not sl.render():find(vim.fn.fnamemodify(vim.fn.getcwd(), ":~"), 1, true), "the neo-tree statusline is empty")
   vim.bo.filetype = ""
@@ -132,13 +178,71 @@ end
 function tests.ui()
   check(require("neat").did_setup, "plugin/neat.lua ran setup() from vim.g.neat")
   check(not loaded("neat.statusline"), "statusline stays off")
-  check(not loaded("neat.input"), "neat.input is not loaded at startup")
+  check(not loaded("neat.input.window") and not loaded("neat.win"), "the input window is not loaded at startup")
+  check(vim.ui.input == require("neat.input").input, "vim.ui.input is neat's")
   check(not loaded("neat.notify.notifier"), "the notifier is not loaded at startup")
   check(not loaded("neat.indent.guides"), "the indent engine is not loaded without a file")
   vim.notify("smoke test")
   check(loaded("neat.notify.notifier"), "the first vim.notify() loads the notifier")
-  check(vim.notify == require("neat.notify.notifier").notify, "vim.notify is the notifier after the first call")
+  check(require("neat.notify").shows_toasts(), "the builtin backend shows toasts")
+  -- a backend of your own
+  local notify_backend = {
+    toasts = false,
+    notify = function() end,
+  }
+  require("neat.notify").setup({ backend = notify_backend })
+  check(vim.notify == notify_backend.notify, "notify: vim.notify is your backend's notify()")
+  check(not require("neat.notify").shows_toasts(), "notify: your backend says it shows no toasts")
+  require("neat.notify").setup({ backend = "builtin" })
+  check(not loaded("notify"), "nvim-notify is never required by the builtin backend")
   check(vim.ui.select == require("neat.select").select, "vim.ui.select is neat's")
+  check(not loaded("neat.select.backends.telescope"), "the telescope backend is not loaded at startup")
+
+  -- select: a backend of your own gets a normalised copy of the opts
+  local sel = require("neat.select")
+  local got_select ---@type {opts: neat.select.Opts, backend_opts: table?}?
+  sel.setup({
+    backend = {
+      available = function()
+        return true
+      end,
+      select = function(items, opts, on_choice, backend_opts)
+        got_select = { opts = opts, backend_opts = backend_opts }
+        on_choice(items[2], 2)
+      end,
+    },
+  })
+  local caller_opts = { prompt = "Pick\none:" }
+  local choice ---@type {item: any, idx: integer?}?
+  vim.ui.select({ "a", "b" }, caller_opts, function(item, idx)
+    choice = { item = item, idx = idx }
+  end)
+  vim.wait(1000, function()
+    return choice ~= nil
+  end)
+  check(got_select ~= nil and got_select.opts.prompt == "Pick one", "select: the prompt is one line without ':'")
+  check(got_select ~= nil and got_select.opts.format_item(1) == "1", "select: format_item is always set")
+  check(
+    caller_opts.prompt == "Pick\none:" and caller_opts.format_item == nil,
+    "select: the caller's opts are untouched"
+  )
+  check(choice ~= nil and choice.item == "b" and choice.idx == 2, "select: the backend's pick reaches on_choice")
+  -- a backend that is not available falls back to the vim.ui.select neat replaced
+  local fallback_items ---@type any[]?
+  vim.ui.select = function(items, _, on_choice)
+    fallback_items = items
+    on_choice(nil, nil)
+  end
+  sel.setup({ backend = "telescope" })
+  vim.ui.select({ "x" }, {}, function() end)
+  vim.wait(1000, function()
+    return fallback_items ~= nil
+  end)
+  check(fallback_items ~= nil, "select: without telescope, vim.ui.select falls back to the one it replaced")
+  ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
+  check(not pcall(sel.setup, { backend = "nope" }), "select rejects an unknown backend")
+  sel.setup({ backend = "telescope" })
+
   check(vim.fn.maparg("z=", "n") ~= "", "spell maps z=")
   -- z= hands the suggestions to whatever vim.ui.select is, and replaces the word
   local select = vim.ui.select
@@ -152,9 +256,16 @@ function tests.ui()
   vim.wo.spell = true
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { "teh cat" })
   vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  vim.fn.setreg('"', "kept")
   require("neat.spell").suggest()
   check(got ~= nil and #got.items > 0 and got.prompt == 'Change "teh" to', "z= passes suggestions to vim.ui.select")
   check(got ~= nil and vim.api.nvim_get_current_line() == got.items[1] .. " cat", "z= replaces the word with the pick")
+  check(vim.fn.getreg('"') == "kept", "z= leaves the unnamed register alone")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "the  wrold" })
+  vim.api.nvim_win_set_cursor(0, { 1, 4 }) -- between the words: <cword> is the next one
+  require("neat.spell").suggest()
+  check(got ~= nil and got.prompt == 'Change "wrold" to', "z= between words takes the next word, like <cword>")
+  check(got ~= nil and vim.api.nvim_get_current_line() == "the  " .. got.items[1], "z= replaces only that word")
   vim.ui.select = select
   vim.cmd("bwipeout!")
   vim.cmd("edit tests/smoke.lua")
@@ -163,6 +274,20 @@ function tests.ui()
   check(not require("neat.indent.guides").enabled, ":Neat indent off")
   vim.cmd("Neat indent toggle")
   check(require("neat.indent.guides").enabled, ":Neat indent toggle")
+  -- input: the first vim.ui.input() opens the window
+  local answer ---@type string?
+  vim.ui.input({ prompt = "Name:", default = "neat" }, function(value)
+    answer = value
+  end)
+  check(loaded("neat.input.window"), "the first vim.ui.input() loads the input window")
+  check(vim.bo.filetype == "ui_input" and vim.api.nvim_win_get_config(0).relative ~= "", "input: a float opens")
+  check(vim.api.nvim_get_current_line() == "neat", "input: the default is filled in")
+  vim.api.nvim_feedkeys(vim.keycode("<CR>"), "x", false)
+  vim.wait(1000, function()
+    return answer ~= nil
+  end)
+  check(answer == "neat", "input: <CR> confirms the text")
+  ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
   check(not pcall(require("neat.notify").setup, { backend = "nope" }), "notify rejects an unknown backend")
   check(not loaded("snacks"), "snacks.nvim is never required")
   check(#health_errors() == 0, ":checkhealth neat has no errors")
@@ -175,6 +300,7 @@ function tests.cmdline()
   check(Config.is_running(), ":Neat cmdline enable")
   vim.cmd("Neat cmdline toggle")
   check(not Config.is_running(), ":Neat cmdline toggle")
+  ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
   check(not pcall(Config.setup, { confirm = { style = "nope" } }), "setup rejects a wrong confirm.style")
   Config.setup({})
   require("neat").setup({ cmdline = { enabled = true } })
@@ -195,7 +321,7 @@ function tests.cmdline()
   -- message routing, against a stand-in for ui2's private module layout
   local shown = {} ---@type {kind: string, target: string?, prompt: boolean}[]
   local fake = { cmd = { prompt = false, level = 0 }, cfg = { msg = { targets = { default = "msg" } } }, msg = {} }
-  function fake.msg.msg_show(kind)
+  function fake.msg.msg_show(kind, ...)
     shown[#shown + 1] = { kind = kind, target = fake.cfg.msg.targets[kind], prompt = fake.cmd.prompt }
   end
   package.loaded["vim._core.ui2"] = fake

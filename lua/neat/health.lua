@@ -3,21 +3,31 @@ local M = {}
 
 local health = vim.health
 
-local known = {
-  select = { enabled = true, trim_prompt = true, telescope = true, format_item_override = true },
-  spell = { enabled = true },
-  input = {
-    enabled = true,
-    icon = true,
-    icon_hl = true,
-    icon_pos = true,
-    prompt_pos = true,
-    win = true,
-    expand = true,
-  },
-  notify = { enabled = true, backend = true, builtin = true, nvim_notify = true },
-  indent = { enabled = true, backend = true, builtin = true, blink = true },
-}
+--- Keys in `user` that `defaults` does not have, as dotted paths. Tables
+--- that are lists in `user` are not looked into.
+---@param user table
+---@param defaults table
+---@param prefix? string
+---@param out? string[]
+---@return string[]
+function M.unknown_keys(user, defaults, prefix, out)
+  prefix, out = prefix or "", out or {}
+  for k, v in pairs(user) do
+    local path = prefix .. tostring(k)
+    if defaults[k] == nil then
+      out[#out + 1] = path
+    elseif type(v) == "table" and type(defaults[k]) == "table" and not vim.islist(v) then
+      M.unknown_keys(v, defaults[k], path .. ".", out)
+    end
+  end
+  return out
+end
+
+--- Modules whose options are checked here, against their `defaults`, one
+--- level deep (backend option tables are open-ended). cmdline and statusline
+--- check their own in neat.cmdline.checks and neat.statusline.checks.
+---@type neat.Module[]
+local SIMPLE = { "select", "spell", "input", "notify", "indent" }
 
 ---@param name string
 ---@param mod string
@@ -45,14 +55,15 @@ function M.check()
   end
 
   local opts = neat.options or {}
-  local unknown = {}
+  local unknown = {} ---@type string[]
   for k, v in pairs(opts) do
     if not vim.tbl_contains(neat.modules, k) then
       unknown[#unknown + 1] = k
-    elseif known[k] and type(v) == "table" then
-      for kk in pairs(v) do
-        if not known[k][kk] then
-          unknown[#unknown + 1] = k .. "." .. kk
+    elseif vim.tbl_contains(SIMPLE, k) and type(v) == "table" then
+      local known = vim.tbl_extend("force", { enabled = true }, require("neat." .. k).defaults)
+      for key in pairs(v) do
+        if known[key] == nil then
+          unknown[#unknown + 1] = k .. "." .. key
         end
       end
     end
@@ -66,6 +77,8 @@ function M.check()
   local on = vim.tbl_filter(neat.enabled, neat.modules)
   health.info("enabled: " .. (#on > 0 and table.concat(on, ", ") or "none"))
 
+  ---@param name neat.Module
+  ---@return boolean
   local function enabled(name)
     return neat.enabled(name)
   end
@@ -77,10 +90,18 @@ function M.check()
   if not enabled("select") then
     health.info("off (set `enabled = true`)")
   else
-    if pcall(require, "telescope") then
-      health.ok("telescope.nvim is installed")
+    local sel = require("neat.select")
+    local backend, name = sel.backend()
+    health.info("backend: " .. (name or "your own"))
+    if backend.available() then
+      health.ok("the backend is available")
+    elseif name == "telescope" then
+      health.warn("telescope.nvim is not installed: vim.ui.select uses Neovim's menu", {
+        "Install https://github.com/nvim-telescope/telescope.nvim",
+        "or set `select.backend` (`:h neat-select-backend`)",
+      })
     else
-      health.warn("telescope.nvim is not installed", "vim.ui.select falls back to the builtin menu")
+      health.warn("the backend is not available: vim.ui.select uses Neovim's menu")
     end
     if vim.ui.select == require("neat.select").select then
       health.ok("vim.ui.select is neat.nvim's")
@@ -94,13 +115,15 @@ function M.check()
     health.info("off (set `enabled = true`)")
   else
     local map = vim.fn.maparg("z=", "n", false, true)
-    if map.callback == require("neat.spell").suggest then
+    if map.rhs == "<Plug>(neat-spell-suggest)" then
       health.ok("z= lists suggestions through vim.ui.select")
+    elseif (neat.options.spell or {}).keymap == false then
+      health.info("`keymap = false`: map <Plug>(neat-spell-suggest) yourself")
     else
       health.warn("z= is mapped by something else", "neat leaves an existing z= mapping alone")
     end
     if enabled("select") and vim.ui.select == require("neat.select").select then
-      health.info("vim.ui.select is neat's (telescope, or the builtin menu without it)")
+      health.info("vim.ui.select is neat's (`select.backend`)")
     else
       health.info("vim.ui.select is whatever your config set (Neovim's numbered list by default)")
     end
@@ -110,11 +133,12 @@ function M.check()
   if not enabled("input") then
     health.info("off (set `enabled = true`)")
   else
-    local input = package.loaded["neat.input"]
-    if input and vim.ui.input == input.input then
-      health.ok("vim.ui.input is neat.nvim's")
-    elseif not input and vim.ui.input ~= neat.original_input() then
-      health.ok("vim.ui.input is neat.nvim's (loads on first use)")
+    local input = require("neat.input")
+    if vim.ui.input == input.input then
+      health.ok(
+        "vim.ui.input is neat.nvim's"
+          .. (package.loaded["neat.input.window"] and "" or " (the window loads on first use)")
+      )
     else
       health.warn("vim.ui.input was replaced after setup() by another plugin")
     end
@@ -125,21 +149,24 @@ function M.check()
     health.info("off (set `enabled = true`)")
   else
     local notify = require("neat.notify")
-    local backend = notify.get_config().backend
-    health.info("backend: " .. backend)
-    if backend == "nvim-notify" then
+    local backend_opt = notify.get_config().backend
+    local name = type(backend_opt) == "string" and backend_opt or "your own"
+    health.info("backend: " .. name)
+    if name == "nvim-notify" then
       need("nvim-notify", "notify", "Install https://github.com/rcarriga/nvim-notify or use another backend")
     end
-    if backend == "native" then
+    if name == "native" then
       if package.loaded["vim._core.ui2"] then
         health.ok("ui2 is loaded and shows messages")
       else
         health.info("ui2 is not loaded; messages use the classic message area")
       end
-    elseif vim.notify == notify.original() then
-      health.warn("vim.notify was replaced after setup() by another plugin")
+    end
+    local backend = notify.backend()
+    if backend and vim.notify == backend.notify then
+      health.ok("vim.notify is routed to " .. name)
     else
-      health.ok("vim.notify is routed to " .. backend)
+      health.warn("vim.notify was replaced after setup() by another plugin")
     end
   end
 

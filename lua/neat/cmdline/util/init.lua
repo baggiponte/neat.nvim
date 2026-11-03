@@ -1,17 +1,21 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: dropped helpers only the removed modules used; no nvim-notify.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
 
 local M = {}
 
 M.islist = vim.islist
 
-M.call = require("neat.cmdline.util.call")
-M.nui = require("neat.cmdline.util.nui")
+---@module "neat.cmdline.util.call"
+M.call = lazy("neat.cmdline.util.call")
+---@module "neat.cmdline.util.nui"
+M.nui = lazy("neat.cmdline.util.nui")
 
 ---@param fn fun():any
+---@return any what `fn` returned
 function M.ignore_events(fn)
   local ei = vim.go.eventignore
   vim.go.eventignore = "all"
@@ -20,6 +24,9 @@ function M.ignore_events(fn)
   return ret
 end
 
+--- Give a buffer the `noice` filetype and a `noice` tag, so other plugins leave it alone.
+---@param buf integer
+---@param tag string
 function M.tag(buf, tag)
   local ft = vim.bo[buf].filetype
 
@@ -42,20 +49,20 @@ function M.tag(buf, tag)
   end
 end
 
----@param win window
+---@param win integer
 ---@param options table<string, any>
 function M.wo(win, options)
   for k, v in pairs(options) do
-    if vim.api.nvim_set_option_value then
-      vim.api.nvim_set_option_value(k, v, { scope = "local", win = win })
-    else
-      vim.wo[win][k] = v
-    end
+    vim.api.nvim_set_option_value(k, v, { scope = "local", win = win })
   end
 end
 
+--- `fn`, called `ms` after the last call (on the main loop).
+---@param ms integer
+---@param fn function
+---@return fun(...)
 function M.debounce(ms, fn)
-  local timer = vim.uv.new_timer()
+  local timer = assert(vim.uv.new_timer())
   return function(...)
     local argv = vim.F.pack_len(...)
     timer:start(ms, 0, function()
@@ -66,16 +73,16 @@ function M.debounce(ms, fn)
 end
 
 ---@generic F: fun()
----@param fn F
 ---@param ms integer
+---@param fn F
 ---@param opts? {enabled?:fun():boolean}
----@return F|Interval
+---@return F|neat.cmdline.Interval
 function M.interval(ms, fn, opts)
   opts = opts or {}
   ---@type uv.uv_timer_t
   local timer = nil
 
-  ---@class Interval
+  ---@class neat.cmdline.Interval
   local T = {}
 
   function T.keep()
@@ -132,6 +139,8 @@ function M.diff_keys(a, b)
 end
 
 ---@param opts? {blocking:boolean, mode:boolean, input:boolean, redraw:boolean}
+---@return boolean blocking
+---@return string? reason
 function M.is_blocking(opts)
   opts = vim.tbl_deep_extend("force", {
     blocking = true,
@@ -157,20 +166,21 @@ end
 
 ---@param opts? vim.api.keyset.redraw
 function M.redraw(opts)
-  if vim.api.nvim__redraw then
-    opts = opts or { flush = true }
-    vim.api.nvim__redraw(opts)
-  else
-    vim.cmd.redraw()
-  end
+  vim.api.nvim__redraw(opts or { flush = true })
 end
 
 M.protect = M.call.protect
 
+---@param fn function
+---@param ... any arguments for `fn`
+---@return any
 function M.try(fn, ...)
   return M.call.protect(fn)(...)
 end
 
+--- Merge `opts` into the window's config.
+---@param win integer
+---@param opts? vim.api.keyset.win_config
 function M.win_apply_config(win, opts)
   opts = vim.tbl_deep_extend("force", vim.api.nvim_win_get_config(win), opts or {})
   vim.api.nvim_win_set_config(win, opts)
@@ -183,15 +193,21 @@ function M.notify(msg, level, ...)
   vim.notify(msg:format(...), level, { title = "neat.nvim cmdline" })
 end
 
+---@param msg string format string
+---@param ... any format arguments
 function M.warn(msg, ...)
   M.notify(msg, vim.log.levels.WARN, ...)
 end
 
+---@param msg string format string
+---@param ... any format arguments
 function M.error(msg, ...)
   M.notify(msg, vim.log.levels.ERROR, ...)
 end
 
 --- Will stop cmdline.nvim and show error
+---@param msg string format string
+---@param ... any format arguments
 function M.panic(msg, ...)
   require("neat.cmdline").disable()
   vim.notify(msg:format(...), vim.log.levels.ERROR)

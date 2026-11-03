@@ -1,13 +1,19 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: module paths renamed from noice to cmdline.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
-local ConfigViews = require("neat.cmdline.config.views")
-local Format = require("neat.cmdline.text.format")
-local Message = require("neat.cmdline.message")
-local Object = require("nui.object")
-local Util = require("neat.cmdline.util")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.config.views"
+local ConfigViews = lazy("neat.cmdline.config.views")
+---@module "neat.cmdline.text.format"
+local Format = lazy("neat.cmdline.text.format")
+---@module "neat.cmdline.message"
+local Message = lazy("neat.cmdline.message")
+---@module "nui.object"
+local Object = lazy("nui.object")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
 
 ---@class NoiceViewBaseOptions
 ---@field buf_options? table<string,any>
@@ -26,7 +32,7 @@ local Util = require("neat.cmdline.util")
 ---@field _id integer
 ---@field _opts NoiceViewOptions
 ---@field _view_opts NoiceViewOptions
----@field _route_opts NoiceViewOptions
+---@field _route_opts NoiceViewOptions|{}
 ---@field _visible boolean
 ---@field _instance "opts" | "view" | "backend"
 ---@field _errors integer
@@ -38,6 +44,7 @@ View._views = {}
 
 ---@param view string
 ---@param opts NoiceViewOptions
+---@return NoiceView?
 function View.get_view(view, opts)
   local opts_orig = vim.deepcopy(opts)
   opts = vim.tbl_deep_extend("force", ConfigViews.get_options(view), opts or {}, { view = view })
@@ -144,6 +151,7 @@ function View:set(messages, opts)
   self:push(messages, opts)
 end
 
+---@param msg string
 function View:debug(msg)
   if Config.options.debug then
     Util.debug(("[%s] %s"):format(self._opts.view, vim.inspect(msg)))
@@ -194,6 +202,7 @@ function View:hide()
 end
 
 ---@param messages? NoiceMessage[]
+---@return integer
 function View:height(messages)
   local ret = 0
   for _, m in ipairs(messages or self._messages) do
@@ -203,6 +212,7 @@ function View:height(messages)
 end
 
 ---@param messages? NoiceMessage[]
+---@return integer
 function View:width(messages)
   local ret = 0
   for _, m in ipairs(messages or self._messages) do
@@ -215,6 +225,7 @@ function View:content()
   return table.concat(
     vim.tbl_map(
       ---@param m NoiceMessage
+      ---@return string
       function(m)
         return m:content()
       end,
@@ -224,6 +235,7 @@ function View:content()
   )
 end
 
+---@param win integer
 function View:set_win_options(win)
   if self._opts.win_options then
     Util.wo(win, self._opts.win_options)
@@ -243,7 +255,7 @@ function View:set_win_options(win)
   end
 end
 
----@param buf number buffer number
+---@param buf integer buffer number
 ---@param opts? {offset: number, highlight: boolean, messages?: NoiceMessage[]} line number (1-indexed), if `highlight`, then only highlight
 function View:render(buf, opts)
   if not Config.is_running() then

@@ -14,6 +14,8 @@ local force = false
 
 --- nvim_set_hl with 256-colour fallbacks for hex fg/bg. Groups are defaults,
 --- so a colorscheme (or the user) that defines `Stl*` groups wins.
+---@param name string
+---@param hl vim.api.keyset.highlight
 local function set_hl(name, hl)
   for gui, cterm in pairs({ fg = 'ctermfg', bg = 'ctermbg' }) do
     local v = hl[gui]
@@ -28,6 +30,9 @@ local function set_hl(name, hl)
   vim.api.nvim_set_hl(0, name, hl)
 end
 
+--- A colour spec as a highlight table, palette keys replaced by their hex colour.
+---@param spec neat.statusline.Color|nil
+---@return vim.api.keyset.highlight?
 local function resolve(spec)
   if spec == nil or spec == false then
     return nil
@@ -52,6 +57,9 @@ end
 ---@type table<string, string>
 M.ref = {}
 
+--- Define `Stl<name>` from a colour spec and remember its reference in M.ref.
+---@param name string
+---@param spec neat.statusline.Color|nil
 local function define(name, spec)
   local hl = resolve(spec)
   if not hl then
@@ -62,6 +70,10 @@ local function define(name, spec)
   M.ref[name] = '%#Stl' .. name .. '#'
 end
 
+--- The foreground (or special) colour of the first group that has one.
+---@param groups string[]
+---@param fallback string?
+---@return string?
 local function fg_of(groups, fallback)
   for _, g in ipairs(groups) do
     local hl = vim.api.nvim_get_hl(0, { name = g, link = false })
@@ -97,6 +109,7 @@ function M.icon(group)
   return ref
 end
 
+---@param config neat.statusline.Config
 function M.setup(config)
   cfg = config
   M.apply(true)

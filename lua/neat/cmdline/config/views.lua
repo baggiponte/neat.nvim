@@ -1,9 +1,11 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: only the cmdline views are left.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
-local Util = require("neat.cmdline.util")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
 
 local M = {}
 

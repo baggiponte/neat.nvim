@@ -1,9 +1,11 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: module paths renamed from noice to cmdline.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Util = require("neat.cmdline.util")
-local _ = require("nui.utils")._
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
+---@module "nui.utils"
+local _ = lazy("nui.utils")._
 
 local M = {}
 
@@ -67,7 +69,7 @@ function M.normalize_popup_options(opts)
   if opts.border and (not opts.border.style or opts.border.style == "none" or opts.border.style == "shadow") then
     opts.border.text = nil
   end
-  return opts
+  return opts --[[@as _.NuiPopupOptions]]
 end
 
 ---@param opts? NuiSplitOptions
@@ -76,12 +78,13 @@ function M.normalize_split_options(opts)
   opts = vim.deepcopy(opts or {})
 
   -- relative
-  require("nui.split.utils").normalize_options(opts)
+  require("nui.split.utils").normalize_options(opts --[[@as nui_split_options]])
 
-  return opts
+  return opts --[[@as _.NuiSplitOptions]]
 end
 
 ---@param hl string|table<string,string>
+---@return string 'winhighlight' value
 function M.get_win_highlight(hl)
   if type(hl) == "string" then
     return hl
@@ -126,6 +129,9 @@ function M.normalize_padding(opts)
   }, opts.padding or {})
 end
 
+--- Screen lines the window's buffer takes, counting wrapped lines.
+---@param win integer
+---@return integer
 function M.win_buf_height(win)
   local buf = vim.api.nvim_win_get_buf(win)
 
@@ -154,6 +160,9 @@ function M.get_layout(dim, _opts)
   local size = vim.deepcopy(opts.size)
 
   ---@return number
+  ---@param min? number
+  ---@param max? number
+  ---@param value number
   local function minmax(min, max, value)
     return math.max(min or 1, math.min(value, max or 1000))
   end
@@ -193,6 +202,10 @@ function M.get_layout(dim, _opts)
   return { size = size, position = position, relative = opts.relative }
 end
 
+--- The float anchor ("NW", "SE", ...) that fits a window of this size at the cursor.
+---@param width number
+---@param height number
+---@return string
 function M.anchor(width, height)
   local anchor = ""
   local lines_above = vim.fn.screenrow() - 1
@@ -212,6 +225,8 @@ function M.anchor(width, height)
   return anchor
 end
 
+---@param win integer
+---@param delta integer lines; negative scrolls up
 function M.scroll(win, delta)
   Util.wo(win, { scrolloff = 0 })
   local view = vim.api.nvim_win_call(win, vim.fn.winsaveview)

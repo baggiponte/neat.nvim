@@ -3,23 +3,6 @@ local M = {}
 
 local health = vim.health
 
---- Keys in `user` that `defaults` does not have, as dotted paths.
----@param user table
----@param defaults table
----@param prefix string
----@param out string[]
-local function unknown_keys(user, defaults, prefix, out)
-  for k, v in pairs(user) do
-    local path = prefix .. tostring(k)
-    if defaults[k] == nil then
-      out[#out + 1] = path
-    elseif type(v) == "table" and type(defaults[k]) == "table" and not vim.islist(v) then
-      unknown_keys(v, defaults[k], path .. ".", out)
-    end
-  end
-  return out
-end
-
 function M.check()
   health.start("cmdline")
   local Config = require("neat.cmdline.config")
@@ -54,7 +37,7 @@ function M.check()
     if type(user.messages) == "table" then
       user.messages.routes = nil
     end
-    local unknown = unknown_keys(user, defaults, "", {})
+    local unknown = require("neat.health").unknown_keys(user, defaults)
     if #unknown == 0 then
       health.ok("No unknown options")
     else
@@ -72,6 +55,9 @@ function M.check()
     return
   end
   local opts = Config.options
+  ---@param name string
+  ---@param wanted boolean the config asks for this patch
+  ---@param patched boolean
   local function report(name, wanted, patched)
     if not wanted then
       health.info(name .. ": off in config")
@@ -92,7 +78,7 @@ function M.check()
     require("neat.cmdline.messages").is_patched()
   )
   if opts.messages.enabled and not require("neat.cmdline.messages").can_notify() then
-    health.info("messages: toasts need neat's `notify` module (builtin or nvim-notify); messages stay with ui2")
+    health.info("messages: toasts need neat's `notify` module with a backend that shows toasts; messages stay with ui2")
   end
   if opts.ui2.cmdheight ~= false and vim.o.cmdheight ~= opts.ui2.cmdheight then
     health.warn(

@@ -1,23 +1,31 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: module paths renamed from noice to cmdline.
-local require = require("neat.cmdline.util.lazy")
+--
+-- Like noice, this reads and resets nui's private `_` state (loading,
+-- mounted); a nui.nvim update that renames it breaks the popup.
+---@diagnostic disable: invisible
+local lazy = require("neat.cmdline.util.lazy")
 
-local Scrollbar = require("neat.cmdline.view.scrollbar")
-local Util = require("neat.cmdline.util")
-local View = require("neat.cmdline.view")
+---@module "neat.cmdline.view.scrollbar"
+local Scrollbar = lazy("neat.cmdline.view.scrollbar")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
+---@module "neat.cmdline.view"
+local View = lazy("neat.cmdline.view")
 
 local uv = vim.uv
 
----@class NuiView: NoiceView
+---@class neat.cmdline.NuiView: NoiceView
 ---@field _nui? NuiPopup|NuiSplit
 ---@field _loading? boolean
 ---@field super NoiceView
 ---@field _hider fun()
----@field _timeout_timer uv_timer_t
+---@field _timeout_timer uv.uv_timer_t
 ---@field _scroll NoiceScrollbar
 ---@diagnostic disable-next-line: undefined-field
 local NuiView = View:extend("NuiView")
 
+---@param opts NoiceNuiOptions
 function NuiView:init(opts)
   NuiView.super.init(self, opts)
   self._timer = uv.new_timer()
@@ -91,7 +99,11 @@ function NuiView:create()
   self._loading = true
   -- needed, since Nui mutates the options
   local opts = vim.deepcopy(self._opts)
-  self._nui = self._opts.type == "split" and require("nui.split")(opts) or require("nui.popup")(opts)
+  if self._opts.type == "split" then
+    self._nui = require("nui.split")(opts --[[@as nui_split_options]])
+  else
+    self._nui = require("nui.popup")(opts --[[@as nui_popup_options]])
+  end
 
   self:mount()
   self:update_layout()

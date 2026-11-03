@@ -12,13 +12,13 @@ local M = {}
 
 local MARK = "__cmdline_nvim_set_pos"
 
----@class CmdlinePagerOptions
+---@class neat.cmdline.PagerConfig
 ---@field width number fraction of the editor width (<= 1) or columns
 ---@field height number maximum fraction of the editor height (<= 1) or lines
 ---@field border string|string[]
 ---@field title string
 
----@type CmdlinePagerOptions
+---@type neat.cmdline.PagerConfig
 M.opts = {
   width = 0.8,
   height = 0.6,
@@ -28,6 +28,7 @@ M.opts = {
 
 ---@param value number
 ---@param total integer
+---@return integer
 local function size(value, total)
   return value <= 1 and math.floor(total * value) or math.floor(value)
 end
@@ -92,7 +93,7 @@ local function patch()
   return true
 end
 
----@param opts? CmdlinePagerOptions|false
+---@param opts? neat.cmdline.PagerConfig|false
 function M.setup(opts)
   if opts == false then
     return

@@ -1,8 +1,9 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: no message filters.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Block = require("neat.cmdline.text.block")
+---@module "neat.cmdline.text.block"
+local Block = lazy("neat.cmdline.text.block")
 
 local _id = 0
 
@@ -48,14 +49,14 @@ function Message:init(event, kind, content)
 end
 
 -- Returns the first buffer that has rendered the message
----@return buffer?
+---@return integer?
 function Message:buf()
   return self:bufs()[1]
 end
 
 function Message:bufs()
   return vim.tbl_filter(function(buf)
-    return vim.api.nvim_buf_is_valid(buf) and self.on_buf(buf)
+    return vim.api.nvim_buf_is_valid(buf) and self:on_buf(buf)
   end, vim.api.nvim_list_bufs())
 end
 
@@ -66,7 +67,7 @@ function Message:wins()
 end
 
 -- Returns the first window that displays the message
----@return window?
+---@return integer?
 function Message:win()
   return self:wins()[1]
 end
@@ -89,32 +90,39 @@ function Message:on_remove()
   end
 end
 
+---@param win integer
+---@return boolean
 function Message:on_win(win)
   return self:on_buf(vim.api.nvim_win_get_buf(win))
 end
 
+---@param buf integer
+---@return boolean
 function Message:on_buf(buf)
   return self._buf_messages[buf] and not not self._buf_messages[buf][self.id]
 end
 
+---@param buf integer
 function Message:_add_buf(buf)
   local msgs = self._buf_messages[buf] or {}
   msgs[self.id] = true
   self._buf_messages[buf] = msgs
 end
 
----@param bufnr number buffer number
+---@param bufnr integer buffer number
 ---@param ns_id number namespace id
 ---@param linenr_start? number line number (1-indexed)
+---@return any
 function Message:highlight(bufnr, ns_id, linenr_start)
   self:_add_buf(bufnr)
   return Message.super.highlight(self, bufnr, ns_id, linenr_start)
 end
 
----@param bufnr number buffer number
+---@param bufnr integer buffer number
 ---@param ns_id number namespace id
 ---@param linenr_start? number start line number (1-indexed)
 ---@param linenr_end? number end line number (1-indexed)
+---@return any
 function Message:render(bufnr, ns_id, linenr_start, linenr_end)
   self:_add_buf(bufnr)
   return Message.super.render(self, bufnr, ns_id, linenr_start, linenr_end)

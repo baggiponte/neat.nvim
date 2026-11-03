@@ -6,12 +6,12 @@
 local Scope = require("neat.indent.scope")
 local util = require("neat.util")
 
----@class ui.indent
+---@class neat.indent
 local M = {}
 
 M.enabled = false
 
----@class ui.indent.Config
+---@class neat.indent.guides.Config
 ---@field enabled? boolean
 local defaults = {
   indent = {
@@ -33,7 +33,7 @@ local defaults = {
     --     "UiIndent8",
     -- },
   },
-  ---@class ui.indent.Scope.Config: ui.scope.Config
+  ---@class neat.indent.Scope.Config: neat.indent.scope.Config
   scope = {
     enabled = true, -- enable highlighting the current scope
     priority = 200,
@@ -66,15 +66,15 @@ local defaults = {
   end,
 }
 
----@class ui.indent.Scope: ui.scope.Scope
+---@class neat.indent.Scope: neat.indent.scope.Scope
 ---@field win number
 
 local config = util.get("scope", defaults)
 local ns = vim.api.nvim_create_namespace("ui_indent")
 local cache_extmarks = {} ---@type table<string, vim.api.keyset.set_extmark[]>
 local cache_underline = {} ---@type table<string, boolean>
-local states = {} ---@type table<number, ui.indent.State>
-local scopes ---@type ui.scope.Listener?
+local states = {} ---@type table<number, neat.indent.State>
+local scopes ---@type neat.indent.scope.Listener?
 local stats = {
   indents = 0,
   extmarks = 0,
@@ -98,11 +98,13 @@ util.set_hl({
 
 ---@param level number
 ---@param hl string|string[]
+---@return string
 local function get_hl(level, hl)
   return type(hl) == "string" and hl or hl[(level - 1) % #hl + 1]
 end
 
 ---@param hl string
+---@return string
 local function get_underline_hl(hl)
   local ret = "UiIndentUnderline_" .. hl
   if not cache_underline[hl] then
@@ -116,7 +118,8 @@ end
 --- Get the virtual text for the indent guide with
 --- the given indent level, left column and shiftwidth
 ---@param indent number
----@param state ui.indent.State
+---@param state neat.indent.State
+---@return vim.api.keyset.set_extmark[]
 local function get_extmarks(indent, state)
   local key = indent
     .. ":"
@@ -158,12 +161,13 @@ end
 ---@param buf number
 ---@param top number
 ---@param bottom number
+---@return neat.indent.State
 local function get_state(win, buf, top, bottom)
-  local prev, changedtick = states[win], vim.b[buf].changedtick ---@type ui.indent.State?, number
+  local prev, changedtick = states[win], vim.b[buf].changedtick ---@type neat.indent.State?, number
   if not (prev and prev.buf == buf and prev.changedtick == changedtick) then
     prev = nil
   end
-  ---@class ui.indent.State
+  ---@class neat.indent.State
   ---@field indents table<number, number>
   ---@field blanks table<number, boolean>
   local state = {
@@ -195,7 +199,7 @@ end
 function M.on_win(win, buf, top, bottom)
   local state = get_state(win, buf, top, bottom)
 
-  local scope = scopes and scopes:get(win) --[[@as ui.indent.Scope?]]
+  local scope = scopes and scopes:get(win) --[[@as neat.indent.Scope?]]
   vim.api.nvim_buf_call(buf, function()
     if scope and vim.fn.foldclosed(scope.from) ~= -1 then
       scope = nil
@@ -264,16 +268,16 @@ function M.on_win(win, buf, top, bottom)
   end
 end
 
----@param scope ui.indent.Scope
----@param state ui.indent.State
+---@param scope neat.indent.Scope
+---@param state neat.indent.State
 ---@return number from, number to
 local function bounds(scope, state)
   return math.max(scope.from, state.top), math.min(scope.to, state.bottom)
 end
 
 --- Render the scope overlappping the given range
----@param scope ui.indent.Scope
----@param state ui.indent.State
+---@param scope neat.indent.Scope
+---@param state neat.indent.State
 ---@private
 function M.render_scope(scope, state)
   local indent = (scope.indent or 2)
@@ -314,8 +318,8 @@ function M.render_scope(scope, state)
 end
 
 --- Render the scope overlappping the given range
----@param scope ui.indent.Scope
----@param state ui.indent.State
+---@param scope neat.indent.Scope
+---@param state neat.indent.State
 ---@private
 function M.render_chunk(scope, state)
   local indent = (scope.indent or 2)
@@ -361,8 +365,8 @@ end
 -- Called when the scope changes
 ---@param win number
 ---@param buf number
----@param scope ui.indent.Scope?
----@param prev ui.indent.Scope?
+---@param scope neat.indent.Scope?
+---@param prev neat.indent.Scope?
 ---@private
 function M.on_scope(win, buf, scope, prev)
   stats.scope = stats.scope + 1
@@ -380,7 +384,7 @@ function M.enable()
   if M.enabled then
     return
   end
-  config = util.get("indent", defaults)
+  config = util.get("indent", defaults) --[[@as neat.indent.guides.Config]]
 
   M.enabled = true
 

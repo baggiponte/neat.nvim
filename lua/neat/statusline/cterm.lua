@@ -9,6 +9,7 @@ local M = {}
 
 -- stylua: ignore start
 -- color conversion
+---@type [string, [integer, integer, integer]][]
 local color_table = {
   -- lookup table for cterm colors
   -- format {'color_code', {r,g,b}}
@@ -283,6 +284,9 @@ local color_table = {
 ---@param hex_color string
 ---@return integer
 function M.rgb2cterm(hex_color)
+  ---@param color1 [integer, integer, integer]
+  ---@param color2 [integer, integer, integer]
+  ---@return number
   local function get_color_distance(color1, color2)
     -- returns how much color2 deviates from color1
     local dr = math.abs(color1[1] - color2[1]) / (color1[1] + 1) * 100
@@ -296,7 +300,7 @@ function M.rgb2cterm(hex_color)
   local b = tonumber(hex_color:sub(6, 7), 16)
 
   -- check which cterm color is closest to hex colors in terms of rgb values
-  local closest_cterm_color = 0
+  local closest_cterm_color = '0'
   local min_distance = 10000
   for _, color in ipairs(color_table) do
     local current_distance = get_color_distance(color[2], { r, g, b })
@@ -305,7 +309,7 @@ function M.rgb2cterm(hex_color)
       closest_cterm_color = color[1]
     end
   end
-  return tonumber(closest_cterm_color)
+  return tonumber(closest_cterm_color) or 0
 end
 
 return M

@@ -9,6 +9,8 @@ local c = require('neat.statusline.components')
 
 local M = {}
 
+---@param ctx neat.statusline.Context
+---@return boolean
 local function is_loclist(ctx)
   return vim.fn.getloclist(ctx.win, { filewinid = 1 }).filewinid ~= 0
 end

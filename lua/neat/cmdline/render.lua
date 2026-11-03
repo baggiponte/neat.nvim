@@ -2,11 +2,14 @@
 -- Changes: replaces noice's message manager, router and filters. The cmdline
 -- is the only thing left to route, so each cmdline format maps straight to
 -- its own view instead of going through route filters.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
-local Util = require("neat.cmdline.util")
-local View = require("neat.cmdline.view")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
+---@module "neat.cmdline.view"
+local View = lazy("neat.cmdline.view")
 
 local M = {}
 
@@ -16,14 +19,14 @@ M._views = {}
 M._current = nil
 ---@type NoiceMessage?
 M._message = nil
----@type CmdlineFormat?
+---@type neat.cmdline.Format?
 M._format = nil
 M._dirty = false
 M._updating = false
----@type Interval?
+---@type (neat.cmdline.Interval|fun())?
 M._updater = nil
 
----@param format CmdlineFormat
+---@param format neat.cmdline.Format
 ---@return NoiceView?
 local function get_view(format)
   local key = format.name or ""
@@ -35,7 +38,7 @@ end
 
 -- Show `message` with the view of `format`, or hide the cmdline when `message` is nil.
 ---@param message? NoiceMessage
----@param format? CmdlineFormat
+---@param format? neat.cmdline.Format
 function M.set(message, format)
   M._message = message
   M._format = message
@@ -54,7 +57,7 @@ function M.update()
   M._updating = true
   M._dirty = false
 
-  local view = M._message and get_view(M._format --[[@as CmdlineFormat]])
+  local view = M._message and get_view(M._format --[[@as neat.cmdline.Format]])
 
   if M._current and M._current ~= view then
     M._current:clear()

@@ -1,6 +1,5 @@
 -- Portions adapted from lualine.nvim (MIT) by hoob3rt and contributors; modified.
--- Source: lua/lualine/components/filetype.lua (icon lookup) and
--- components/diagnostics (severity order) at nvim-lualine/lualine.nvim 221ce6b2d999187044529f49da6554a92f740a96.
+-- Source: components/diagnostics (severity order) at nvim-lualine/lualine.nvim 221ce6b2d999187044529f49da6554a92f740a96.
 -- Changes: results are cached per buffer and invalidated by autocmds.
 
 -- Per-buffer caches, invalidated by autocmds (see init.lua). Rendering only
@@ -18,72 +17,86 @@ local lsp_all ---@type string?
 local lsp_buf = {} ---@type table<integer, string>
 local heads = {} ---@type table<string, string> git dir -> branch
 
+--- Escape `%` for the statusline.
+---@param s string
+---@return string
 local function esc(s)
   return (s:gsub('%%', '%%%%'))
 end
+M.escape = esc
 
+local icons ---@type neat.statusline.IconProvider?
+--- nil: not loaded yet; true/false: whether `icons.load()` found its plugin.
+local icons_loaded ---@type boolean?
+local git ---@type neat.statusline.GitProvider?
+
+---@param config neat.statusline.Config
 function M.setup(config)
   cfg = config
+  local providers = require('neat.statusline.providers')
+  local new_icons = providers.icons(config.providers.icons)
+  if new_icons ~= icons then
+    icons, icons_loaded = new_icons, nil
+  end
+  git = providers.git(config.providers.git)
+  files, gits = {}, {}
+end
+
+--- The active git provider (its `events` invalidate the git cache).
+---@return neat.statusline.GitProvider?
+function M.git_provider()
+  return git
 end
 
 -- file ----------------------------------------------------------------------
 
-local devicons ---@type table|false|nil
-local devicons_scheduled = false
-
---- nvim-web-devicons if it is loaded. The statusline is drawn under textlock,
---- so it must not load anything itself: a plugin manager's require hook may
---- :packadd or wait on async work there and fail with E565. The first time the
---- icons are missing, require them on the next tick instead, then drop the
---- file caches and redraw.
-local function get_devicons()
-  if devicons ~= nil then
-    return devicons
+--- The icon provider once its plugin is loaded, else nil. The statusline is
+--- drawn under textlock, so loading waits for the next tick; then the file
+--- caches are dropped and the statusline redrawn with icons.
+---@return neat.statusline.IconProvider?
+local function loaded_icons()
+  if not icons or icons_loaded == false then
+    return nil
   end
-  local mod = package.loaded['nvim-web-devicons']
-  if mod then
-    devicons = mod
-    return mod
+  if icons_loaded then
+    return icons
   end
-  if not devicons_scheduled then
-    devicons_scheduled = true
-    vim.schedule(function()
-      local ok, loaded = pcall(require, 'nvim-web-devicons')
-      devicons = ok and loaded or false
-      if devicons then
-        M.invalidate_file()
-        require('neat.statusline').redraw()
-      end
-    end)
-  end
-  return false
+  icons_loaded = false -- until load() says otherwise; also stops a second schedule
+  local provider = icons
+  vim.schedule(function()
+    if icons ~= provider then
+      return -- setup() ran again with another provider
+    end
+    icons_loaded = provider.load()
+    if icons_loaded then
+      M.invalidate_file()
+      require('neat.statusline').redraw()
+    end
+  end)
+  return nil
 end
 
--- Same lookup as lualine's filetype component: by file name, then by
--- filetype, then a generic icon; nothing when the buffer has no filetype.
+---@param buf integer
+---@return string statusline text: highlight and icon, or ''
 local function get_icon(buf)
   local ft = vim.bo[buf].filetype
   if ft == '' then
     return ''
   end
-  local icons = get_devicons()
-  if not icons then
+  local provider = loaded_icons()
+  if not provider then
     return ''
   end
   local name = vim.fn.fnamemodify(api.nvim_buf_get_name(buf), ':t')
-  local icon, group = icons.get_icon(name)
-  if icon == nil then
-    icon, group = icons.get_icon_by_filetype(ft)
-  end
-  if icon == nil and group == nil then
-    icon, group = '\u{e612}', 'DevIconDefault'
-  end
-  if not icon then
+  local icon, group = provider.get(name, ft)
+  if not icon or icon == '' then
     return ''
   end
-  return hl.icon(group) .. icon
+  return (group and hl.icon(group) or '') .. esc(icon)
 end
 
+---@param buf integer
+---@return {icon: string, path: string, name: string} statusline text
 function M.file(buf)
   local f = files[buf]
   if f then
@@ -99,6 +112,7 @@ function M.file(buf)
   return f
 end
 
+---@param buf? integer nil drops every buffer
 function M.invalidate_file(buf)
   if buf then
     files[buf] = nil
@@ -109,6 +123,9 @@ end
 
 -- git -----------------------------------------------------------------------
 
+--- Branch (or short commit) checked out in `gitdir`.
+---@param gitdir string
+---@return string
 local function read_head(gitdir)
   local fd = io.open(gitdir .. '/HEAD', 'r')
   if not fd then
@@ -124,6 +141,8 @@ local function read_head(gitdir)
 end
 
 --- Branch without gitsigns: read .git/HEAD of the buffer's (or cwd's) repo.
+---@param buf integer
+---@return string
 local function fallback_head(buf)
   local name = api.nvim_buf_get_name(buf)
   local start = (name ~= '' and vim.bo[buf].buftype == '') and vim.fs.dirname(name) or vim.fn.getcwd()
@@ -153,37 +172,36 @@ local function fallback_head(buf)
   return h
 end
 
+---@param buf integer
+---@return {head: string, diff: string} statusline text for `branch` and `diff`
 function M.git(buf)
   local g = gits[buf]
   if g then
     return g
   end
-  local b = vim.b[buf]
-  local head = b.gitsigns_head
+  local st = git and git.status(buf) or {}
+  local head = st.head
   if head == nil or head == '' then
     head = fallback_head(buf)
   end
-  local diff = ''
-  local st = b.gitsigns_status_dict
-  if st then
-    local icons = cfg.icons.diff
-    local parts = {}
-    if (st.added or 0) > 0 then
-      parts[#parts + 1] = hl.ref.DiffAdded .. icons.added .. st.added
-    end
-    if (st.changed or 0) > 0 then
-      parts[#parts + 1] = hl.ref.DiffChanged .. icons.changed .. st.changed
-    end
-    if (st.removed or 0) > 0 then
-      parts[#parts + 1] = hl.ref.DiffRemoved .. icons.removed .. st.removed
-    end
-    diff = table.concat(parts, ' ')
+  local symbols = cfg.icons.diff
+  local parts = {}
+  if (st.added or 0) > 0 then
+    parts[#parts + 1] = hl.ref.DiffAdded .. symbols.added .. st.added
   end
-  g = { head = esc(head), diff = diff }
+  if (st.changed or 0) > 0 then
+    parts[#parts + 1] = hl.ref.DiffChanged .. symbols.changed .. st.changed
+  end
+  if (st.removed or 0) > 0 then
+    parts[#parts + 1] = hl.ref.DiffRemoved .. symbols.removed .. st.removed
+  end
+  g = { head = esc(head), diff = table.concat(parts, ' ') }
   gits[buf] = g
   return g
 end
 
+---@param buf? integer nil drops every buffer
+---@param heads_too? boolean also forget the branches read from .git/HEAD
 function M.invalidate_git(buf, heads_too)
   if heads_too then
     heads = {}
@@ -204,6 +222,8 @@ local severities = {
   { vim.diagnostic.severity.HINT, 'hint', 'DiagHint' },
 }
 
+---@param buf integer
+---@return string statusline text
 function M.diagnostics(buf)
   local d = diags[buf]
   if d then
@@ -222,6 +242,7 @@ function M.diagnostics(buf)
   return d
 end
 
+---@param buf? integer nil drops every buffer
 function M.invalidate_diagnostics(buf)
   if buf then
     diags[buf] = nil
@@ -232,6 +253,8 @@ end
 
 -- lsp -------------------------------------------------------------------------
 
+---@param filter? vim.lsp.get_clients.Filter
+---@return string statusline text
 local function client_names(filter)
   local names = {}
   for _, client in ipairs(vim.lsp.get_clients(filter)) do
@@ -244,6 +267,8 @@ local function client_names(filter)
   return esc((icon ~= '' and (icon .. ' ') or '') .. table.concat(names, '|'))
 end
 
+---@param buf? integer clients attached to this buffer; nil for every client
+---@return string statusline text
 function M.lsp(buf)
   if buf then
     local s = lsp_buf[buf]
@@ -259,6 +284,7 @@ function M.lsp(buf)
   return lsp_all
 end
 
+--- Drop the cached client names.
 function M.invalidate_lsp()
   lsp_all = nil
   lsp_buf = {}
@@ -306,6 +332,7 @@ function M.clear_progress(client_id)
 end
 
 --- Spinner plus one line per client with work in progress, or ''.
+---@return string
 function M.lsp_progress()
   if progress_str then
     return progress_str
@@ -331,6 +358,8 @@ function M.lsp_progress()
   return progress_str
 end
 
+--- Drop every cache entry of a deleted buffer.
+---@param buf integer
 function M.forget(buf)
   files[buf], gits[buf], diags[buf], lsp_buf[buf] = nil, nil, nil, nil
 end

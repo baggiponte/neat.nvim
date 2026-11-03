@@ -1,11 +1,13 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: module paths renamed from noice to cmdline.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
-local Util = require("neat.cmdline.util")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
 
----@class CallOptions
+---@class neat.cmdline.CallOptions
 ---@field catch? fun(err:string)
 ---@field finally? fun()
 ---@field msg? string
@@ -19,9 +21,9 @@ local defaults = {
   ignore_keyboard_interrupt = true,
 }
 
----@class Call
----@field _fn fun()
----@field _opts CallOptions
+---@class neat.cmdline.Call
+---@field _fn function
+---@field _opts neat.cmdline.CallOptions
 ---@field _retry boolean
 ---@field _defer_retry boolean
 local M = {}
@@ -39,7 +41,7 @@ end
 
 ---@generic F: fun()
 ---@param fn F
----@param opts? CallOptions
+---@param opts? neat.cmdline.CallOptions
 ---@return F
 function M.protect(fn, opts)
   if not fn then
@@ -55,6 +57,7 @@ function M.protect(fn, opts)
   end
 end
 
+---@param err string
 function M:on_error(err)
   M._errors = M._errors + 1
   if M._errors > M._max_errors then
@@ -96,20 +99,12 @@ function M:on_error(err)
     end
   end
 
-  pcall(M.log, self, err)
   self:notify(err)
 end
 
-function M:log(data)
-  local file = Config.options.log
-  local fd = io.open(file, "a+")
-  if not fd then
-    error(("Could not open file %s for writing"):format(file))
-  end
-  fd:write("\n\n" .. os.date() .. "\n" .. self:format(data, true))
-  fd:close()
-end
-
+---@param err string
+---@param stack? boolean append a traceback
+---@return string
 function M:format(err, stack)
   local lines = {}
   table.insert(lines, self._opts.msg or err)
@@ -124,6 +119,7 @@ function M:format(err, stack)
   return table.concat(lines, "\n")
 end
 
+---@param err string
 function M:notify(err)
   local msg = self:format(err, Config.options.debug)
   vim.schedule(function()
@@ -142,6 +138,8 @@ function M:__call(...)
   end
 
   -- error handler
+  ---@param err string
+  ---@return string
   local error_handler = function(err)
     pcall(self.on_error, self, err)
     return err

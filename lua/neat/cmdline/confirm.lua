@@ -7,11 +7,11 @@
 
 local M = {}
 
----@class CmdlineConfirmOptions
+---@class neat.cmdline.ConfirmConfig
 ---@field style "center"|"box"|"toast"|"ui2" center: middle of the editor; box: centred near the top (noice); toast: top-right corner; ui2: leave it to ui2
 ---@field title string
 
----@type CmdlineConfirmOptions
+---@type neat.cmdline.ConfirmConfig
 M.opts = {
   style = "center",
   title = " Confirm ",
@@ -162,7 +162,8 @@ M._pending = nil
 function M.on_message(content, forward)
   local text = require("neat.cmdline.messages").text(content)
   if M._prompt_kind == "other" then
-    return M.forward(forward)
+    M.forward(forward)
+    return
   end
   M._question = text
   if M._prompt_kind == "confirm" then
@@ -212,7 +213,7 @@ function M.reset()
   M.hide()
 end
 
----@param opts? CmdlineConfirmOptions
+---@param opts? neat.cmdline.ConfirmConfig
 function M.setup(opts)
   M.opts = vim.tbl_deep_extend("force", M.opts, opts or {})
 end

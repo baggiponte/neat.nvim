@@ -1,17 +1,21 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: module paths renamed from noice to cmdline.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local NuiText = require("nui.text")
-local Syntax = require("neat.cmdline.text.syntax")
-local Treesitter = require("neat.cmdline.text.treesitter")
+---@module "nui.text"
+local NuiText = lazy("nui.text")
+---@module "neat.cmdline.text.syntax"
+local Syntax = lazy("neat.cmdline.text.syntax")
+---@module "neat.cmdline.text.treesitter"
+local Treesitter = lazy("neat.cmdline.text.treesitter")
 
 ---@class NoiceExtmark
 ---@field col? number
 ---@field end_col? number
 ---@field id? number
 ---@field hl_group? string
----@field virt_self_win_col? number
+---@field virt_text_win_col? number
+---@field length? number
 ---@field relative? boolean
 ---@field lang? string
 ---@field lines? number
@@ -24,6 +28,9 @@ local Treesitter = require("neat.cmdline.text.treesitter")
 ---@diagnostic disable-next-line: undefined-field
 local NoiceText = NuiText:extend("NoiceText")
 
+---@param text string
+---@param hl_group? string
+---@return NoiceText
 function NoiceText.virtual_text(text, hl_group)
   local content = (" "):rep(vim.api.nvim_strwidth(text))
   return NoiceText(content, {
@@ -33,6 +40,8 @@ function NoiceText.virtual_text(text, hl_group)
   })
 end
 
+---@param col number
+---@return NoiceText
 function NoiceText.cursor(col)
   return NoiceText(" ", {
     hl_group = "NoiceCursor",
@@ -42,6 +51,9 @@ function NoiceText.cursor(col)
 end
 
 ---@param col? number
+---@param lang string
+---@param lines integer
+---@return NoiceText
 function NoiceText.syntax(lang, lines, col)
   return NoiceText("", {
     lang = lang,
@@ -50,7 +62,7 @@ function NoiceText.syntax(lang, lines, col)
   })
 end
 
----@param bufnr number buffer number
+---@param bufnr integer buffer number
 ---@param ns_id number namespace id
 ---@param linenr number line number (1-indexed)
 ---@param byte_start number start byte position (0-indexed)

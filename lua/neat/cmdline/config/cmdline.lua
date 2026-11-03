@@ -1,13 +1,17 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: formats are looked up directly by cmdline.render instead of
 -- being turned into routes.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
-local Highlights = require("neat.cmdline.config.highlights")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.config.highlights"
+local Highlights = lazy("neat.cmdline.config.highlights")
 
 local M = {}
 
+--- Fill in each cmdline format (name, highlights, view options) and drop
+--- the ones set to false.
 function M.setup()
   local formats = Config.options.cmdline.format
   for name, format in pairs(formats) do
@@ -32,7 +36,7 @@ function M.setup()
         kind = name,
         icon_hl_group = "Noice" .. hl_group_icon,
         view = Config.options.cmdline.view,
-        lang = format.lang or format.ft,
+        lang = format.lang,
         opts = {
           ---@diagnostic disable-next-line: undefined-field
           border = {

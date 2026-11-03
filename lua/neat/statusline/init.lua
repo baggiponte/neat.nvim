@@ -17,6 +17,8 @@ local ORDER = { 'a', 'b', 'c', 'x', 'y', 'z' }
 local out = {}
 local ctx = { win = 0, buf = 0, active = true, cfg = nil }
 
+---@param item neat.statusline.Component
+---@return fun(ctx: neat.statusline.Context): string?
 local function resolve(item)
   if type(item) == 'function' then
     return item
@@ -28,6 +30,9 @@ local function resolve(item)
   return fn
 end
 
+--- Section lists of component names and functions, as lists of functions.
+---@param sections neat.statusline.Sections
+---@return table<string, (fun(ctx: neat.statusline.Context): string?)[]>
 local function compile(sections)
   local compiled = {}
   for _, s in ipairs(ORDER) do
@@ -45,6 +50,11 @@ end
 
 local compiled_active, compiled_inactive
 
+--- Highlight reference for section `s`.
+---@param s string section letter
+---@param active boolean
+---@param fam string mode family ("normal", "insert", ...)
+---@return string
 local function section_ref(s, active, fam)
   if not active then
     return (s == 'a' or s == 'z') and hl.ref.Inactive or hl.ref[s:upper()]
@@ -139,6 +149,9 @@ local diag_dirty = false
 
 local function autocmds()
   local group = api.nvim_create_augroup('neat.statusline.nvim', { clear = true })
+  ---@param events string|string[]
+  ---@param fn fun(args: vim.api.keyset.create_autocmd.callback_args)
+  ---@param opts? vim.api.keyset.create_autocmd
   local function au(events, fn, opts)
     opts = opts or {}
     opts.group, opts.callback = group, fn
@@ -165,11 +178,14 @@ local function autocmds()
     redraw()
   end)
 
-  au('User', function(args)
-    local buf = args.data and args.data.buffer
-    cache.invalidate_git(buf)
-    redraw()
-  end, { pattern = { 'GitSignsUpdate', 'GitSignsChanged' } })
+  local git = cache.git_provider()
+  for _, spec in ipairs(git and git.events or {}) do
+    au(spec.event, function(args)
+      local buf = type(args.data) == 'table' and args.data.buffer or nil
+      cache.invalidate_git(type(buf) == 'number' and buf or nil)
+      redraw()
+    end, { pattern = spec.pattern })
+  end
 
   au({ 'FocusGained', 'ShellCmdPost', 'TermLeave' }, function()
     cache.invalidate_git(nil, true)
@@ -225,11 +241,15 @@ local STATUSLINE = "%!v:lua.require'neat.statusline'.render()"
 --- True once setup() ran.
 M.did_setup = false
 
+--- The options in use, defaults merged in (nil before setup()).
+---@type neat.statusline.Config
+M.config = nil
+
 --- The options setup() got (read by the health check).
----@type statusline.Config
+---@type neat.statusline.Config
 M.user_options = {}
 
----@param c statusline.Config
+---@param c neat.statusline.Config
 local function validate(c)
   vim.validate('palette', c.palette, 'table')
   vim.validate('colors', c.colors, 'table')
@@ -242,10 +262,11 @@ local function validate(c)
   vim.validate('sections', c.sections, 'table')
   vim.validate('inactive_sections', c.inactive_sections, 'table')
   vim.validate('extensions', c.extensions, 'table')
+  require('neat.statusline.providers').validate(c.providers)
 end
 
 --- Configure and draw the statusline.
----@param opts? statusline.Config
+---@param opts? neat.statusline.Config
 function M.setup(opts)
   opts = opts or {}
   vim.validate('opts', opts, 'table')
@@ -256,6 +277,13 @@ function M.setup(opts)
   end
   if opts.inactive_sections then
     cfg.inactive_sections = opts.inactive_sections
+  end
+  -- a provider table of your own is kept as given, not merged into a copy
+  for _, kind in ipairs({ 'icons', 'git' }) do
+    local p = type(opts.providers) == 'table' and opts.providers[kind]
+    if type(p) == 'table' then
+      cfg.providers[kind] = p
+    end
   end
   validate(cfg)
   M.did_setup = true

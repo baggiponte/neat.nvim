@@ -6,12 +6,46 @@
 
 local util = require("neat.util")
 
+--- Options for a floating window (snacks.nvim's `win` options, floats only).
+--- Styles registered with neat.util.style() fill in what is not given.
+---@class neat.win.Config: vim.api.keyset.win_config
+---@field style? string a registered style to start from ("float", "minimal", "input", ...)
+---@field show? boolean open the window right away (default true)
+---@field enter? boolean focus the window when it opens
+---@field minimal? boolean apply the "minimal" style
+---@field fixbuf? boolean keep other buffers out of the window
+---@field position? "float"
+---@field width? number|fun(self: neat.win): number columns, or a fraction of the editor when < 1
+---@field height? number|fun(self: neat.win): number lines, or a fraction of the editor when < 1
+---@field min_width? number
+---@field max_width? number
+---@field min_height? number
+---@field max_height? number
+---@field buf? integer show this buffer instead of a scratch one
+---@field ft? string filetype of the scratch buffer
+---@field scratch_ft? string
+---@field text? string|string[]|fun(): (string|string[]) initial buffer text
+---@field wo? vim.wo|{} window-local options
+---@field bo? vim.bo|{} buffer-local options
+---@field b? table<string, any> buffer variables
+---@field w? table<string, any> window variables
+---@field keys? table<string, false|string|string[]|table> key -> action name(s) or a keymap spec
+---@field actions? table<string, neat.win.Action|fun(self: neat.win): any> named actions for `keys`
+---@field resize? boolean
+---@field on_buf? fun(self: neat.win)
+---@field on_win? fun(self: neat.win)
+---@field on_close? fun(self: neat.win)
+
+---@class neat.win.Action
+---@field action fun(self: neat.win): any
+---@field desc? string
+
 ---@class neat.win
 ---@field id number
 ---@field buf? number
 ---@field scratch_buf? number
 ---@field win? number
----@field opts table
+---@field opts neat.win.Config
 ---@field augroup? number
 ---@field keys table[]
 ---@field events table[]
@@ -199,6 +233,7 @@ function M:on_resize()
 end
 
 ---@param actions string|string[]
+---@return any what the action returned
 function M:execute(actions)
   return self:action(actions)()
 end
@@ -259,6 +294,8 @@ function M:_on(event, opts)
     end
   end
   event_opts.group = event_opts.group or self.augroup
+  ---@param ev vim.api.keyset.create_autocmd.callback_args
+  ---@return any
   event_opts.callback = function(ev)
     table.insert(event_stack, ev.event)
     local ok, err = pcall(opts.callback, self, ev)
@@ -399,8 +436,14 @@ function M:scratch()
   self.buf = vim.api.nvim_create_buf(false, true)
   vim.bo[self.buf].swapfile = false
   self.scratch_buf = self.buf
-  local text = type(self.opts.text) == "function" and self.opts.text() or self.opts.text
-  text = type(text) == "string" and vim.split(text, "\n") or text
+  local text = self.opts.text
+  if type(text) == "function" then
+    text = text()
+  end
+  if type(text) == "string" then
+    text = vim.split(text, "\n")
+  end
+  ---@cast text string[]?
   if text then
     vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, text)
   end
@@ -620,12 +663,14 @@ end
 
 ---@param from? number 1-indexed, inclusive
 ---@param to? number 1-indexed, inclusive
+---@return string[]
 function M:lines(from, to)
   return self:buf_valid() and vim.api.nvim_buf_get_lines(self.buf, from and from - 1 or 0, to or -1, false) or {}
 end
 
 ---@param from? number 1-indexed, inclusive
 ---@param to? number 1-indexed, inclusive
+---@return string
 function M:text(from, to)
   return table.concat(self:lines(from, to), "\n")
 end
@@ -700,6 +745,10 @@ function M:border_size()
   border = vim.tbl_map(function(b)
     return type(b) == "table" and b[1] or b
   end, border)
+  --- 1 if any border char from..to is drawn, else 0.
+  ---@param from integer
+  ---@param to integer
+  ---@return integer
   local function size(from, to)
     for i = from, to do
       if border[i] ~= "" then
@@ -746,6 +795,8 @@ function M:valid()
   return self:win_valid() and self:buf_valid() and vim.api.nvim_win_get_buf(self.win) == self.buf
 end
 
+---@param parent? {width: number, height: number}
+---@return {width: number, height: number, col: number, row: number, border: boolean}
 function M:dim(parent)
   parent = parent or self:parent_size()
   local ret = {
@@ -756,30 +807,50 @@ function M:dim(parent)
     border = self:has_border(),
   }
 
+  ---@param s number|(fun(self: neat.win): number)|nil size: 0 is full, < 1 a fraction
+  ---@param ps number parent size
+  ---@param border_offset number
+  ---@return number
   local function size(s, ps, border_offset)
-    s = type(s) == "function" and s(self) or s or 0
-    if s == 0 then -- full size
-      return ps - border_offset
-    elseif s < 1 then -- relative size
-      return math.floor(ps * s) - border_offset
+    local n ---@type number
+    if type(s) == "function" then
+      n = s(self)
+    else
+      n = s or 0
     end
-    return s
+    if n == 0 then -- full size
+      return ps - border_offset
+    elseif n < 1 then -- relative size
+      return math.floor(ps * n) - border_offset
+    end
+    return n
   end
 
+  ---@param p number|(fun(self: neat.win): number)|nil position: nil centres, < 0 counts from the end, < 1 a fraction
+  ---@param s number size
+  ---@param ps number parent size
+  ---@param border_from number
+  ---@param border_to number
+  ---@return number
   local function pos(p, s, ps, border_from, border_to)
-    p = type(p) == "function" and p(self) or p
-    if self.opts.relative == "cursor" then
-      return p or 0
+    local n ---@type number?
+    if type(p) == "function" then
+      n = p(self)
+    else
+      n = p
     end
-    if not p then -- center
+    if self.opts.relative == "cursor" then
+      return n or 0
+    end
+    if not n then -- center
       return math.floor((ps - s) / 2) - border_from
     end
-    if p < 0 then -- negative position
-      return ps - s + p - border_from - border_to
-    elseif p < 1 and p > 0 then -- relative position
-      return math.floor(ps * p) + border_from
+    if n < 0 then -- negative position
+      return ps - s + n - border_from - border_to
+    elseif n < 1 and n > 0 then -- relative position
+      return math.floor(ps * n) + border_from
     end
-    return p
+    return n
   end
 
   local border = self:border_size()

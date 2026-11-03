@@ -3,20 +3,21 @@
 -- router on top of ui2 (cmdline.messages); no notify source, LSP or redirect.
 -- Started by require("neat").setup({ cmdline = { enabled = true } });
 -- `:Neat cmdline` lives in plugin/neat.lua and the health check in neat.cmdline.checks.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
 
 local M = {}
 
 --- Options from `setup(opts)`, else the `cmdline` table given to neat.setup().
----@param opts? cmdline.Opts
----@return cmdline.Opts
+---@param opts? neat.cmdline.Config
+---@return neat.cmdline.Config
 local function resolve(opts)
   if opts then
     return opts
   end
-  local o = vim.deepcopy(_G.require("neat").options.cmdline or {})
+  local o = vim.deepcopy(require("neat").options.cmdline or {})
   o.enabled = nil
   return o
 end
@@ -35,7 +36,7 @@ local function check()
 end
 
 --- Configure and start the cmdline popup (after VimEnter).
----@param opts? cmdline.Opts
+---@param opts? neat.cmdline.Config
 function M.setup(opts)
   if not check() then
     return
@@ -45,7 +46,7 @@ function M.setup(opts)
   -- 'cmdheight' and ui2 right away, so the screen does not change under you
   -- when the popup loads after VimEnter
   local ui2 = type(opts.ui2) == "table" and opts.ui2 or {}
-  _G.require("neat.cmdline.ui2").start({
+  require("neat.cmdline.ui2").start({
     enable = ui2.enable ~= false,
     cmdheight = ui2.cmdheight == nil and 0 or ui2.cmdheight,
   })

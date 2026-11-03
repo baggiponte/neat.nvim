@@ -53,9 +53,17 @@ local function patch()
   if type(real.cmdline_show) ~= "function" then
     return false
   end
+  ---@param content [integer, string][]
+  ---@param pos integer
+  ---@param firstc string
+  ---@param prompt string
+  ---@param indent integer
+  ---@param level integer
+  ---@param hl_id integer
   local function cmdline_show(content, pos, firstc, prompt, indent, level, hl_id)
     if require("neat.cmdline.ui.cmdline").is_confirm(prompt) and not require("neat.cmdline.confirm").enabled() then
-      return real.cmdline_show(content, pos, firstc, prompt, indent, level, hl_id)
+      real.cmdline_show(content, pos, firstc, prompt, indent, level, hl_id)
+      return
     end
     -- ui2 still has to move an expanded message out of the way (cmd_on_key)
     -- and lay out multi-line blocks (srow > 0), so those keep the real call.
@@ -71,6 +79,8 @@ local function patch()
       require("neat.cmdline.confirm").on_prompt(prompt)
     end
   end
+  ---@param level integer
+  ---@param abort boolean
   local function cmdline_hide(level, abort)
     local win = ui2.wins and ui2.wins.cmd
     -- Same test ui2 uses to skip hiding while a nested cmdline is still open.
@@ -87,7 +97,8 @@ local function patch()
       -- instead, so hand it a shown window to hide.
       pcall(vim.api.nvim_win_set_config, win, { hide = false })
     end
-    return real.cmdline_hide(level, abort)
+    real.cmdline_hide(level, abort)
+    return
   end
   ui2.cmd = setmetatable({}, {
     [MARK] = real,

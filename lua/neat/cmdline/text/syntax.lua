@@ -2,12 +2,15 @@
 -- Changes: module paths renamed from noice to cmdline.
 local M = {}
 
+--- A language name usable in a syntax group name.
+---@param str string
+---@return string
 local function fix(str)
-  return str:gsub("[^%w_%.%-]+", "_")
+  return (str:gsub("[^%w_%.%-]+", "_"))
 end
 
 --- Highlights a region of the buffer with a given language
----@param buf buffer buffer to highlight. Defaults to the current buffer if 0
+---@param buf integer buffer to highlight. Defaults to the current buffer if 0
 ---@param ns number namespace for the highlights
 ---@param range {[1]:number, [2]:number, [3]: number, [4]: number} (table) Region to highlight {start_row, start_col, end_row, end_col}
 ---@param lang string treesitter language
@@ -18,7 +21,7 @@ function M.highlight(buf, ns, range, lang)
 
     -- HACK: reset current_syntax, since some syntax files like markdown won't load if it is already set
     pcall(vim.api.nvim_buf_del_var, buf, "current_syntax")
-    if not pcall(vim.cmd, string.format("syntax include %s syntax/%s.vim", group, lang)) then
+    if not pcall(vim.api.nvim_command, string.format("syntax include %s syntax/%s.vim", group, lang)) then
       return
     end
     vim.cmd(

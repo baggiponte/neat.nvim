@@ -1,19 +1,23 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: attaches to `ext_cmdline` only; messages and the popupmenu are left
 -- to Neovim (ui2 and the completion plugin). Updates go through cmdline.render.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Cmdline = require("neat.cmdline.ui.cmdline")
-local Config = require("neat.cmdline.config")
-local Render = require("neat.cmdline.render")
-local Util = require("neat.cmdline.util")
+---@module "neat.cmdline.ui.cmdline"
+local Cmdline = lazy("neat.cmdline.ui.cmdline")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.render"
+local Render = lazy("neat.cmdline.render")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
 
 local M = {}
 M._attached = false
 
 local queue = {}
 
-local timer = vim.uv.new_timer()
+local timer = assert(vim.uv.new_timer())
 local processing = false
 
 function M.process_queue()
@@ -27,9 +31,14 @@ function M.process_queue()
 end
 
 local stack_level = 0
+--- vim.ui_attach() callback: queue the event for `handler`.
+---@param handler fun(event: string, ...)
+---@param event string
+---@param ... any event arguments
 function M.ui_attach_cb(handler, event, ...)
   if stack_level > 50 then
-    return Util.panic("Event loop detected. Shutting down...")
+    Util.panic("Event loop detected. Shutting down...")
+    return
   end
   stack_level = stack_level + 1
 
@@ -113,6 +122,7 @@ end
 
 ---@param handler fun(...)
 ---@param event string
+---@param ... any event arguments
 function M.handle(handler, event, ...)
   handler(event, ...)
 end

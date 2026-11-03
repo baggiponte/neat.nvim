@@ -20,9 +20,13 @@ M.config = setmetatable({}, {
   end,
 })
 
+---@param v any
+---@return boolean
 local function is_dict_like(v) -- has string and number keys
   return type(v) == "table" and (vim.tbl_isempty(v) or not vim.islist(v))
 end
+---@param v any
+---@return boolean
 local function is_dict(v) -- has only string keys
   return type(v) == "table" and (vim.tbl_isempty(v) or not v[1])
 end
@@ -63,6 +67,7 @@ end
 --- Register a window style config.
 ---@param name string
 ---@param defaults table
+---@return string name
 function M.style(name, defaults)
   config.styles[name] = vim.tbl_deep_extend("force", vim.deepcopy(defaults), config.styles[name] or {})
   return name
@@ -121,6 +126,7 @@ end
 
 ---@param group string|string[] hl group to get color from
 ---@param prop? string property to get. Defaults to "fg"
+---@return string? hex colour
 function M.color(group, prop)
   prop = prop or "fg"
   group = type(group) == "table" and group or { group }
@@ -134,6 +140,8 @@ function M.color(group, prop)
 end
 
 --- Set window-local options.
+---@param win integer
+---@param wo? vim.wo|{}
 function M.wo(win, wo)
   for k, v in pairs(wo or {}) do
     vim.api.nvim_set_option_value(k, v, { scope = "local", win = win })
@@ -141,6 +149,8 @@ function M.wo(win, wo)
 end
 
 --- Set buffer-local options.
+---@param buf integer
+---@param bo? vim.bo|{}
 function M.bo(buf, bo)
   for k, v in pairs(bo or {}) do
     vim.api.nvim_set_option_value(k, v, { buf = buf })
@@ -171,6 +181,7 @@ function M.redraw_range(win, from, to)
 end
 
 ---@param str string
+---@return string
 function M.keycode(str)
   return vim.api.nvim_replace_termcodes(str, true, true, true)
 end
@@ -178,10 +189,13 @@ end
 local key_cache = {} ---@type table<string, string>
 
 ---@param key string
+---@return string
 function M.normkey(key)
   if key_cache[key] then
     return key_cache[key]
   end
+  ---@param v string a key name without <>
+  ---@return string
   local function norm(v)
     local l = v:lower()
     if l == "leader" then
@@ -202,6 +216,8 @@ function M.normkey(key)
     key = vim.fn.keytrans((not key or key == "") and "\\" or key)
   else
     local extracted = {} ---@type string[]
+    ---@param v string a <key> with its brackets
+    ---@return string
     local function extract(v)
       v = v:sub(2, -2)
       if v:sub(2, 2) == "-" and v:sub(1, 1):find("[aAmMcCsS]") then

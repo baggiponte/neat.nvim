@@ -7,7 +7,8 @@ CONTENTS                                                       *neat-contents*
   2. Setup .................................................. |neat-setup|
   3. Commands ............................................... |:Neat|
   4. Modules ................................................ |neat-modules|
-  5. Health ................................................. |neat-health|
+  5. Adapters ............................................... |neat-adapters|
+  6. Health ................................................. |neat-health|
 
 ==============================================================================
 1. INTRODUCTION                                                         *neat*
@@ -100,25 +101,43 @@ statusline                                                   *neat-statusline*
     in lua/neat/statusline/config.lua. The `Stl*` highlight groups are
     defaults, so a colorscheme can override them.
 
+    `providers` picks where file icons and git status come from:
+    `icons` = "devicons" (nvim-web-devicons) and `git` = "gitsigns" by
+    default. Each also takes your own adapter (|neat-statusline-providers|)
+    or false (no icons; branch from .git/HEAD and no diff).
+
 select                                                           *neat-select*
-    |vim.ui.select()| as a telescope dropdown; the builtin menu without
-    telescope. Options: `trim_prompt`, `telescope`, `format_item_override`.
+    |vim.ui.select()| through a picker `backend`: "telescope" (a dropdown,
+    the default), "builtin" (Neovim's own menu) or your own adapter
+    (|neat-select-backend|). Calls are queued, so two pickers never open
+    at once. When the backend is not available (telescope not installed),
+    Neovim's menu is used. Options: `backend`, `trim_prompt`, `telescope`
+    (picker opts; {} means the dropdown theme), `builtin`,
+    `format_item_override` (kind -> format_item).
 
 spell                                                             *neat-spell*
     |z=| lists spelling suggestions through |vim.ui.select()|, so they open
     in whatever picker implements it (neat's `select`, or another plugin).
     With Neovim's own |vim.ui.select()| that is the usual numbered list. A
-    count (`3z=`) still picks directly, and an existing `z=` mapping is
-    left alone. No options besides `enabled`.
+    count (`3z=`) still picks directly, and the word is replaced in place
+    without touching registers.
+
+    `keymap` (default true) maps `z=` to `<Plug>(neat-spell-suggest)`,
+    unless `z=` is already mapped. Set it to false and map the <Plug> key
+    yourself to use another key: >lua
+        vim.keymap.set('n', '<leader>z', '<Plug>(neat-spell-suggest)')
+<
 
 input                                                             *neat-input*
     |vim.ui.input()| in a floating window with history and completion.
     Options: `icon`, `icon_hl`, `icon_pos`, `prompt_pos`, `win`, `expand`.
 
 notify                                                           *neat-notify*
-    |vim.notify()| backend: `backend` = "builtin" (toasts), "native" (ui2) or
-    "nvim-notify". `builtin` and `nvim_notify` pass options to each
-    backend. LSP progress is in the statusline (|neat-statusline|).
+    |vim.notify()| backend: `backend` = "builtin" (toasts), "native" (ui2),
+    "nvim-notify" or your own adapter (|neat-notify-backend|). `builtin`
+    and `nvim_notify` pass options to each backend. nvim-notify is
+    required on the first message, not at setup. LSP progress is in the
+    statusline (|neat-statusline|).
 
 indent                                                           *neat-indent*
     Indent and scope guides: `backend` = "builtin" or "blink"
@@ -133,11 +152,115 @@ rename                                                           *neat-rename*
     a file explorer's rename event. Needs no setup.
 
 ==============================================================================
-5. HEALTH                                                        *neat-health*
+5. ADAPTERS                                                    *neat-adapters*
 
-`:checkhealth neat` checks Neovim, unknown options, the plugins each enabled
-module needs (nui.nvim, telescope, nvim-notify, blink.indent, gitsigns,
-nvim-web-devicons), whether another plugin replaced |vim.notify()|,
+neat never assumes a plugin is installed. Where a module uses another plugin
+(a picker, a notifier, an icon set, a git integration) it goes through a
+small adapter: a Lua table with a few functions. The adapters neat ships are
+picked by name and required only when chosen; the defaults are telescope,
+nvim-web-devicons and gitsigns. Pass a table of your own instead of a name
+to use anything else. The types are in the module sources (LuaCATS), so
+LuaLS completes and checks them.
+
+Rules every adapter follows:
+- Do not require the plugin at the top of the file or when the table is
+  built. Require it inside the functions, on first use.
+- Return quickly and never error when the plugin is missing: report it
+  through `available()`/`load()` and let neat fall back.
+
+select backend                                           *neat-select-backend*
+    `neat.select.Backend` (lua/neat/select/init.lua):
+    `available()`     true when the picker can be used now. Called on
+                      every |vim.ui.select()|; may require the picker.
+    `select(items, opts, on_choice, backend_opts)`
+                      show the picker; call `on_choice(item, idx)` once,
+                      or `on_choice()` when cancelled. `opts.prompt` and
+                      `opts.format_item` are always set.
+    Example with mini.pick: >lua
+        select = {
+          enabled = true,
+          backend = {
+            available = function()
+              return pcall(require, 'mini.pick')
+            end,
+            select = function(items, opts, on_choice)
+              require('mini.pick').ui_select(items, opts, on_choice)
+            end,
+          },
+        }
+<    For snacks.nvim, call `Snacks.picker.select(items, opts, on_choice)`.
+
+notify backend                                           *neat-notify-backend*
+    `neat.notify.Backend` (lua/neat/notify/init.lua):
+    `notify(msg, level, opts)`  becomes |vim.notify()|.
+    `toasts`          true when messages show outside the message area. The
+                      cmdline module routes messages to |vim.notify()|
+                      only when true, so they are not echoed back.
+    `history()`       optional; opens `:Neat notifications`.
+    `setup(opts)`     optional; called by |neat.setup()|. Keep it cheap.
+    Example with mini.notify: >lua
+        notify = {
+          enabled = true,
+          backend = {
+            toasts = true,
+            notify = function(msg, level, opts)
+              local MiniNotify = require('mini.notify')
+              if not _G.MiniNotify then MiniNotify.setup() end
+              return MiniNotify.make_notify()(msg, level, opts)
+            end,
+            history = function() require('mini.notify').show_history() end,
+          },
+        }
+<
+statusline providers                               *neat-statusline-providers*
+    The statusline is drawn under textlock, where a plugin manager's
+    require hook may fail (E565), so providers split loading from reading.
+
+    `neat.statusline.IconProvider`:
+    `load()`          require the icon plugin, return whether it is there.
+                      Called once, just after the first draw.
+    `get(name, filetype)`  return icon and highlight group, or nil. Called
+                      while drawing; must not load anything.
+
+    `neat.statusline.GitProvider`:
+    `status(buf)`     return `{ head?, added?, changed?, removed? }` or nil.
+                      Without `head` the branch is read from .git/HEAD.
+    `events`          optional autocmds after which statuses are stale,
+                      e.g. `{ { event = 'User', pattern = 'MiniDiffUpdated' } }`.
+
+    Example with mini.icons and mini.diff/mini.git: >lua
+        statusline = {
+          enabled = true,
+          providers = {
+            icons = {
+              load = function()
+                local ok, icons = pcall(require, 'mini.icons')
+                if ok and not _G.MiniIcons then icons.setup() end
+                return ok
+              end,
+              get = function(name) return MiniIcons.get('file', name) end,
+            },
+            git = {
+              status = function(buf)
+                local diff = vim.b[buf].minidiff_summary or {}
+                local git = vim.b[buf].minigit_summary or {}
+                return { head = git.head_name, added = diff.add,
+                         changed = diff.change, removed = diff.delete }
+              end,
+              events = {
+                { event = 'User',
+                  pattern = { 'MiniDiffUpdated', 'MiniGitUpdated' } },
+              },
+            },
+          },
+        }
+<
+==============================================================================
+6. HEALTH                                                        *neat-health*
+
+`:checkhealth neat` checks Neovim, unknown options, the adapters each enabled
+module uses (nui.nvim, telescope, nvim-notify, blink.indent, gitsigns,
+nvim-web-devicons, or your own), whether another plugin replaced |vim.notify()|,
 |vim.ui.select()|, |vim.ui.input()| or 'statusline' after neat, and whether
 each ui2 patch applied.
 
