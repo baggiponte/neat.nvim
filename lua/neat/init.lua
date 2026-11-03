@@ -31,12 +31,12 @@ M.modules = { "notify", "select", "input", "indent", "spell", "statusline", "cmd
 ---@field enabled? boolean
 
 ---@class neat.Config
----@field cmdline? cmdline.Opts|neat.Enabled
----@field statusline? statusline.Config|neat.Enabled
+---@field cmdline? neat.cmdline.Config|neat.Enabled
+---@field statusline? neat.statusline.Config|neat.Enabled
 ---@field select? neat.select.Config|neat.Enabled
 ---@field input? neat.input.Config|neat.Enabled
 ---@field notify? neat.notify.Config|neat.Enabled
----@field indent? ui.indent.Config|neat.Enabled
+---@field indent? neat.indent.Config|neat.Enabled
 ---@field spell? neat.Enabled
 
 --- True once setup() ran.

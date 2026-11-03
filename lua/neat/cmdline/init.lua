@@ -11,8 +11,8 @@ local Config = lazy("neat.cmdline.config")
 local M = {}
 
 --- Options from `setup(opts)`, else the `cmdline` table given to neat.setup().
----@param opts? cmdline.Opts
----@return cmdline.Opts
+---@param opts? neat.cmdline.Config
+---@return neat.cmdline.Config
 local function resolve(opts)
   if opts then
     return opts
@@ -36,7 +36,7 @@ local function check()
 end
 
 --- Configure and start the cmdline popup (after VimEnter).
----@param opts? cmdline.Opts
+---@param opts? neat.cmdline.Config
 function M.setup(opts)
   if not check() then
     return

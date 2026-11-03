@@ -10,6 +10,8 @@ local Highlights = lazy("neat.cmdline.config.highlights")
 
 local M = {}
 
+--- Fill in each cmdline format (name, highlights, view options) and drop
+--- the ones set to false.
 function M.setup()
   local formats = Config.options.cmdline.format
   for name, format in pairs(formats) do
@@ -34,7 +36,7 @@ function M.setup()
         kind = name,
         icon_hl_group = "Noice" .. hl_group_icon,
         view = Config.options.cmdline.view,
-        lang = format.lang or format.ft,
+        lang = format.lang,
         opts = {
           ---@diagnostic disable-next-line: undefined-field
           border = {

@@ -1,7 +1,28 @@
 {
   "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
   "runtime.version": "LuaJIT",
-  "workspace.library": ["$VIMRUNTIME/lua", "${3rd}/luv/library"],
+  "workspace.library": [
+    "$VIMRUNTIME/lua",
+    "${3rd}/luv/library",
+    "deps/nui.nvim/lua"
+  ],
   "workspace.checkThirdParty": false,
-  "diagnostics.globals": ["vim"]
+  "diagnostics.globals": [
+    "vim"
+  ],
+  "workspace.ignoreDir": [
+    "deps",
+    "dev",
+    ".git"
+  ],
+  "diagnostics.neededFileStatus": {
+    "incomplete-signature-doc": "Any!",
+    "missing-local-export-doc": "Any!",
+    "missing-global-doc": "Any!"
+  },
+  "diagnostics.severity": {
+    "incomplete-signature-doc": "Warning!",
+    "missing-local-export-doc": "Warning!",
+    "missing-global-doc": "Warning!"
+  }
 }

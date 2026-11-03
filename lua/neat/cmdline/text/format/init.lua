@@ -92,8 +92,8 @@ function M.format(message, format, opts)
   -- use existing message, with a separate _lines array
   local ret = setmetatable({ _lines = {} }, { __index = message })
 
-  for _, entry in ipairs(format) do
-    entry = M.parse_entry(entry)
+  for _, raw in ipairs(format) do
+    local entry = M.parse_entry(raw)
     if entry then
       entry.opts = vim.tbl_deep_extend("force", vim.deepcopy(opts[entry.formatter] or {}), entry.opts)
 
@@ -161,11 +161,11 @@ function M._align(message, width, align)
     if w < width then
       if align == "right" then
         table.insert(line._texts, 1, NuiText(string.rep(" ", width - w)))
-        ---@diagnostic disable-next-line: no-unknown
+        ---@diagnostic disable-next-line: inject-field
         line._texts[1].padding = true
       elseif align == "center" then
         table.insert(line._texts, 1, NuiText(string.rep(" ", math.floor((width - w) / 2 + 0.5))))
-        ---@diagnostic disable-next-line: no-unknown
+        ---@diagnostic disable-next-line: inject-field
         line._texts[1].padding = true
       end
     end

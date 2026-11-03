@@ -3,6 +3,8 @@
 local M = {}
 M.queries = {}
 
+---@param lang string
+---@return vim.treesitter.Query?
 function M.get_query(lang)
   if not M.queries[lang] then
     M.queries[lang] = vim.treesitter.query.get(lang, "highlights")
@@ -10,10 +12,14 @@ function M.get_query(lang)
   return M.queries[lang]
 end
 
+---@param ft string
+---@return string
 function M.get_lang(ft)
   return vim.treesitter.language.get_lang(ft) or ft
 end
 
+---@param lang string
+---@return boolean
 function M.has_lang(lang)
   lang = vim.treesitter.language.get_lang(lang) or lang
   local ok, ret = pcall(vim.treesitter.language.add, lang)
@@ -21,11 +27,10 @@ function M.has_lang(lang)
 end
 
 --- Highlights a region of the buffer with a given language
----@param buf integer? buffer to highlight. Defaults to the current buffer if 0
+---@param buf integer buffer to highlight; 0 for the current buffer
 ---@param ns number namespace for the highlights
 ---@param range {[1]:number, [2]:number, [3]: number, [4]: number} (table) Region to highlight {start_row, start_col, end_row, end_col}
 ---@param lang string treesitter language
--- luacheck: no redefined
 function M.highlight(buf, ns, range, lang)
   lang = M.get_lang(lang)
   lang = lang == "markdown" and "markdown_inline" or lang
@@ -36,7 +41,7 @@ function M.highlight(buf, ns, range, lang)
   -- we can't use a cached parser here since that could interfere with the existing parser of the buffer
   local LanguageTree = require("vim.treesitter.languagetree")
   local opts = { injections = { php = "", html = "" } }
-  local parser = LanguageTree.new(buf --[[@as integer]], lang, opts)
+  local parser = LanguageTree.new(buf, lang, opts)
 
   ---@diagnostic disable-next-line: invisible
   parser:set_included_regions({ { range } })

@@ -70,6 +70,8 @@ function M.input(opts, on_confirm)
   local parent_win = vim.api.nvim_get_current_win()
   local mode = vim.fn.mode()
 
+  --- Save the text to the history (only at the newest entry unless `force`).
+  ---@param force? boolean
   local function record(force)
     if not ctx.win then
       return
@@ -84,6 +86,7 @@ function M.input(opts, on_confirm)
     history:record(text)
   end
 
+  ---@param value string?
   local function confirm(value)
     record()
     ctx.win = nil
@@ -107,6 +110,10 @@ function M.input(opts, on_confirm)
   opts.prompt = opts.prompt_pos == "title" and opts.prompt:gsub(":$", "") or opts.prompt
 
   local title, statuscolumn = {}, {} ---@type table[], string[]
+  --- Add a part (icon, prompt) to the title or the statuscolumn.
+  ---@param text string
+  ---@param hl string
+  ---@param pos "left"|"title"|false
   local function add(text, hl, pos)
     if pos == "title" then
       table.insert(title, { " " .. text, hl })
@@ -124,13 +131,14 @@ function M.input(opts, on_confirm)
     table.insert(title, { " ", "UiInputTitle" })
   end
 
+  ---@param text string?
   local function set(text)
     text = text or ""
     vim.api.nvim_buf_set_lines(ctx.win.buf, 0, -1, false, { text })
     vim.api.nvim_win_set_cursor(ctx.win.win, { 1, #text })
   end
 
-  opts.win = Win.resolve("input", opts.win, {
+  local win_opts = Win.resolve("input", opts.win, {
     enter = true,
     title = next(title) and title or nil,
     bo = {
@@ -177,20 +185,23 @@ function M.input(opts, on_confirm)
         return vim.fn.pumvisible() == 1 and "<c-p>"
       end,
     },
-  })
+  }) --[[@as neat.win.Config]]
+  opts.win = win_opts
 
   local parent_zindex = vim.api.nvim_win_get_config(parent_win).zindex
-  opts.win.zindex = parent_zindex and parent_zindex + 1 or opts.win.zindex
+  win_opts.zindex = parent_zindex and parent_zindex + 1 or win_opts.zindex
 
-  local min_width = opts.win.width or 60
+  local min_width = win_opts.width or 60
   if opts.expand then
-    opts.win.width = function(self)
+    ---@param self neat.win
+    ---@return number
+    win_opts.width = function(self)
       local w = type(min_width) == "function" and min_width(self) or min_width --[[@as number]]
       return math.max(w, vim.api.nvim_strwidth(self:text()) + 5)
     end
   end
 
-  local win = Win(opts.win)
+  local win = Win(win_opts)
   ctx = { opts = opts, win = win }
   vim.fn.prompt_setprompt(win.buf, "")
   vim.cmd.startinsert()
@@ -230,6 +241,7 @@ end
 --- so `file`, `dir`, `custom,…`/`customlist,…` (e.g. neo-tree's file completion) all work.
 ---@param findstart number
 ---@param base string
+---@return integer|string[] 0 for findstart, else the matches
 function M.complete(findstart, base)
   local completion = ctx.opts and ctx.opts.completion
   if findstart == 1 then

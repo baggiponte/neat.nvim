@@ -1,7 +1,7 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: only the cmdline options are left (no messages, popupmenu, notify,
 -- LSP, routes, commands, redirect, presets or log file); added `ui2`,
--- validation and the user-facing `cmdline.Opts` type.
+-- validation and the user-facing `neat.cmdline.Config` type.
 ---@diagnostic disable: missing-fields
 local lazy = require("neat.cmdline.util.lazy")
 
@@ -11,34 +11,34 @@ local M = {}
 M.ns = vim.api.nvim_create_namespace("noice")
 
 --- `cmdline` options for `require("neat").setup()`. Every field is optional.
----@class cmdline.Opts
----@field cmdline? cmdline.Opts.cmdline
----@field ui2? cmdline.Opts.ui2
----@field confirm? CmdlineConfirmOptions
----@field messages? CmdlineMessagesOptions
+---@class neat.cmdline.Config
+---@field cmdline? neat.cmdline.Config.cmdline
+---@field ui2? neat.cmdline.Config.ui2
+---@field confirm? neat.cmdline.ConfirmConfig
+---@field messages? neat.cmdline.MessagesConfig
 ---@field throttle? number milliseconds between updates when Neovim is not blocking
 ---@field views? table<string, NoiceViewOptions> override the built-in views, see cmdline.config.views
 ---@field format? NoiceFormatOptions override formatter options, see cmdline.config.format
 ---@field debug? boolean append ui events to ./cmdline.nvim.log
 
----@class cmdline.Opts.cmdline
+---@class neat.cmdline.Config.cmdline
 ---@field view? "cmdline_popup"|"cmdline"
 ---@field opts? NoiceViewOptions
----@field format? table<string, CmdlineFormat|false>
+---@field format? table<string, neat.cmdline.Format|false>
 
----@class cmdline.Opts.ui2
+---@class neat.cmdline.Config.ui2
 ---@field enable? boolean
 ---@field cmdheight? integer|false
 ---@field disable_cmdline? boolean
----@field pager? CmdlinePagerOptions|false
+---@field pager? neat.cmdline.PagerConfig|false
 
 function M.defaults()
-  ---@class CmdlineConfig
+  ---@class neat.cmdline.Options
   local defaults = {
     cmdline = {
       view = "cmdline_popup", -- view for rendering the cmdline. Change to `cmdline` to get a classic cmdline at the bottom
       opts = {}, -- global options for the cmdline. See section on views
-      ---@type table<string, CmdlineFormat|false>
+      ---@type table<string, neat.cmdline.Format|false>
       format = {
         -- conceal: (default=true) This will hide the text in the cmdline that matches the pattern.
         -- view: (default is cmdline view)
@@ -71,7 +71,7 @@ function M.defaults()
       disable_cmdline = true,
       -- Show ui2's pager (`:messages`, `g<`, long output) as a centred float.
       -- Set to `false` to keep ui2's panel at the bottom.
-      ---@type CmdlinePagerOptions|false
+      ---@type neat.cmdline.PagerConfig|false
       pager = {
         width = 0.8, -- fraction of the editor width, or columns
         height = 0.6, -- maximum fraction of the editor height, or lines
@@ -84,7 +84,7 @@ function M.defaults()
     -- builtin or nvim-notify backend, else falls back to ui2); "pager": ui2's
     -- pager; "auto": the pager above `pager_lines` lines, else a toast; "ui2"
     -- or unlisted: ui2's own target. Set a kind to false to leave it to ui2.
-    ---@type CmdlineMessagesOptions
+    ---@type neat.cmdline.MessagesConfig
     messages = {
       enabled = true,
       pager_lines = 5,
@@ -106,7 +106,7 @@ function M.defaults()
       },
     },
     -- confirm() and `:s///c` prompts
-    ---@type CmdlineConfirmOptions
+    ---@type neat.cmdline.ConfirmConfig
     confirm = {
       style = "center", -- "center": middle of the editor; "box": centred near the top, as in noice; "toast": top-right corner; "ui2": ui2's bottom line
       title = " Confirm ",
@@ -121,7 +121,7 @@ function M.defaults()
   return defaults
 end
 
---- @type CmdlineConfig
+---@type neat.cmdline.Options
 M.options = {}
 
 M._running = false
@@ -130,10 +130,10 @@ function M.is_running()
 end
 
 --- The options the user passed, before merging (the health check reads them).
----@type cmdline.Opts
+---@type neat.cmdline.Config
 M.user_options = {}
 
----@param o CmdlineConfig
+---@param o neat.cmdline.Options
 local function validate(o)
   vim.validate("cmdline", o.cmdline, "table")
   vim.validate("neat.cmdline.view", o.cmdline.view, "string")
@@ -167,7 +167,7 @@ local function validate(o)
 end
 
 --- Merge and validate the options. Errors on a wrong type.
----@param options? cmdline.Opts
+---@param options? neat.cmdline.Config
 function M.setup(options)
   M.user_options = options or {}
   M.options = vim.tbl_deep_extend("force", {}, M.defaults(), {

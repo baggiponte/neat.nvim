@@ -17,16 +17,20 @@ local lsp_all ---@type string?
 local lsp_buf = {} ---@type table<integer, string>
 local heads = {} ---@type table<string, string> git dir -> branch
 
+--- Escape `%` for the statusline.
+---@param s string
+---@return string
 local function esc(s)
   return (s:gsub('%%', '%%%%'))
 end
+M.escape = esc
 
 local icons ---@type neat.statusline.IconProvider?
 --- nil: not loaded yet; true/false: whether `icons.load()` found its plugin.
 local icons_loaded ---@type boolean?
 local git ---@type neat.statusline.GitProvider?
 
----@param config statusline.Config
+---@param config neat.statusline.Config
 function M.setup(config)
   cfg = config
   local providers = require('neat.statusline.providers')
@@ -91,6 +95,8 @@ local function get_icon(buf)
   return (group and hl.icon(group) or '') .. esc(icon)
 end
 
+---@param buf integer
+---@return {icon: string, path: string, name: string} statusline text
 function M.file(buf)
   local f = files[buf]
   if f then
@@ -106,6 +112,7 @@ function M.file(buf)
   return f
 end
 
+---@param buf? integer nil drops every buffer
 function M.invalidate_file(buf)
   if buf then
     files[buf] = nil
@@ -116,6 +123,9 @@ end
 
 -- git -----------------------------------------------------------------------
 
+--- Branch (or short commit) checked out in `gitdir`.
+---@param gitdir string
+---@return string
 local function read_head(gitdir)
   local fd = io.open(gitdir .. '/HEAD', 'r')
   if not fd then
@@ -131,6 +141,8 @@ local function read_head(gitdir)
 end
 
 --- Branch without gitsigns: read .git/HEAD of the buffer's (or cwd's) repo.
+---@param buf integer
+---@return string
 local function fallback_head(buf)
   local name = api.nvim_buf_get_name(buf)
   local start = (name ~= '' and vim.bo[buf].buftype == '') and vim.fs.dirname(name) or vim.fn.getcwd()
@@ -188,6 +200,8 @@ function M.git(buf)
   return g
 end
 
+---@param buf? integer nil drops every buffer
+---@param heads_too? boolean also forget the branches read from .git/HEAD
 function M.invalidate_git(buf, heads_too)
   if heads_too then
     heads = {}
@@ -208,6 +222,8 @@ local severities = {
   { vim.diagnostic.severity.HINT, 'hint', 'DiagHint' },
 }
 
+---@param buf integer
+---@return string statusline text
 function M.diagnostics(buf)
   local d = diags[buf]
   if d then
@@ -226,6 +242,7 @@ function M.diagnostics(buf)
   return d
 end
 
+---@param buf? integer nil drops every buffer
 function M.invalidate_diagnostics(buf)
   if buf then
     diags[buf] = nil
@@ -236,6 +253,8 @@ end
 
 -- lsp -------------------------------------------------------------------------
 
+---@param filter? vim.lsp.get_clients.Filter
+---@return string statusline text
 local function client_names(filter)
   local names = {}
   for _, client in ipairs(vim.lsp.get_clients(filter)) do
@@ -248,6 +267,8 @@ local function client_names(filter)
   return esc((icon ~= '' and (icon .. ' ') or '') .. table.concat(names, '|'))
 end
 
+---@param buf? integer clients attached to this buffer; nil for every client
+---@return string statusline text
 function M.lsp(buf)
   if buf then
     local s = lsp_buf[buf]
@@ -263,6 +284,7 @@ function M.lsp(buf)
   return lsp_all
 end
 
+--- Drop the cached client names.
 function M.invalidate_lsp()
   lsp_all = nil
   lsp_buf = {}
@@ -310,6 +332,7 @@ function M.clear_progress(client_id)
 end
 
 --- Spinner plus one line per client with work in progress, or ''.
+---@return string
 function M.lsp_progress()
   if progress_str then
     return progress_str
@@ -335,6 +358,8 @@ function M.lsp_progress()
   return progress_str
 end
 
+--- Drop every cache entry of a deleted buffer.
+---@param buf integer
 function M.forget(buf)
   files[buf], gits[buf], diags[buf], lsp_buf[buf] = nil, nil, nil, nil
 end

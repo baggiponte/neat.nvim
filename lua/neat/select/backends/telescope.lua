@@ -66,6 +66,7 @@ local custom_kind = {
     picker.finder = finders.new_table({
       results = entries,
       ---@param entry neat.select.TelescopeEntry
+      ---@return neat.select.TelescopeEntry
       entry_maker = function(entry)
         return entry
       end,

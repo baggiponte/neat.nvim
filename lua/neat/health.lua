@@ -77,6 +77,8 @@ function M.check()
   local on = vim.tbl_filter(neat.enabled, neat.modules)
   health.info("enabled: " .. (#on > 0 and table.concat(on, ", ") or "none"))
 
+  ---@param name neat.Module
+  ---@return boolean
   local function enabled(name)
     return neat.enabled(name)
   end
@@ -147,8 +149,8 @@ function M.check()
     health.info("off (set `enabled = true`)")
   else
     local notify = require("neat.notify")
-    local name = notify.get_config().backend
-    name = type(name) == "string" and name or "your own"
+    local backend_opt = notify.get_config().backend
+    local name = type(backend_opt) == "string" and backend_opt or "your own"
     health.info("backend: " .. name)
     if name == "nvim-notify" then
       need("nvim-notify", "notify", "Install https://github.com/rcarriga/nvim-notify or use another backend")

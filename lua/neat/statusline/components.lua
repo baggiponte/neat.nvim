@@ -14,9 +14,8 @@ local cache = require('neat.statusline.cache')
 
 local M = {}
 
-local function esc(s)
-  return (s:gsub('%%', '%%%%'))
-end
+local esc = cache.escape
+--- Escape `%` for the statusline (re-exported for extensions and your own components).
 M.escape = esc
 
 -- mode ----------------------------------------------------------------------
@@ -73,6 +72,8 @@ function M.mode_info()
   return modes[m:sub(1, 1)] and modes[m:sub(1, 1)][1] or m, fam
 end
 
+---@param ctx neat.statusline.Context
+---@return string
 function M.mode(ctx)
   local label = M.mode_info()
   local icon = ctx.cfg.icons.mode
@@ -81,6 +82,8 @@ end
 
 -- git -----------------------------------------------------------------------
 
+---@param ctx neat.statusline.Context
+---@return string
 function M.branch(ctx)
   local head = cache.git(ctx.buf).head
   if head == '' then
@@ -90,21 +93,29 @@ function M.branch(ctx)
   return icon ~= '' and (icon .. ' ' .. head) or head
 end
 
+---@param ctx neat.statusline.Context
+---@return string
 function M.diff(ctx)
   return cache.git(ctx.buf).diff
 end
 
 -- file ----------------------------------------------------------------------
 
+---@param ctx neat.statusline.Context
+---@return string
 function M.fileicon(ctx)
   return cache.file(ctx.buf).icon
 end
 
+---@param ctx neat.statusline.Context
+---@return string
 function M.filepath(ctx)
   return cache.file(ctx.buf).path
 end
 
 --- Tail with [+]/[-] flags (lualine 'filename' defaults, used for inactive windows).
+---@param ctx neat.statusline.Context
+---@return string
 function M.filename(ctx)
   local f = cache.file(ctx.buf)
   local s = f.name
@@ -119,27 +130,36 @@ end
 
 -- diagnostics / lsp -----------------------------------------------------------
 
+---@param ctx neat.statusline.Context
+---@return string
 function M.diagnostics(ctx)
   return cache.diagnostics(ctx.buf)
 end
 
 --- LSP `$/progress` (title, message, percentage), updated on LspProgress.
+---@return string
 function M.lsp_progress()
   return cache.lsp_progress()
 end
 
+---@param ctx neat.statusline.Context
+---@return string
 function M.lsp(ctx)
   return cache.lsp(ctx.cfg.lsp_scope == 'buffer' and ctx.buf or nil)
 end
 
 -- position --------------------------------------------------------------------
 
+---@param ctx neat.statusline.Context
+---@return string
 function M.location(ctx)
   local line = vim.fn.line('.', ctx.win)
   local col = vim.fn.charcol('.', ctx.win)
   return string.format('%3d:%-2d', line, col)
 end
 
+---@param ctx neat.statusline.Context
+---@return string
 function M.progress(ctx)
   local cur = vim.fn.line('.', ctx.win)
   if cur == 1 then
@@ -157,6 +177,8 @@ end
 -- search count, so these put them in the statusline.
 
 --- "recording @q" while a macro is being recorded.
+---@param ctx neat.statusline.Context
+---@return string
 function M.recording(ctx)
   if not ctx.active then
     return ''
@@ -166,6 +188,8 @@ function M.recording(ctx)
 end
 
 --- "[3/12]" for the last search while its matches are highlighted.
+---@param ctx neat.statusline.Context
+---@return string
 function M.searchcount(ctx)
   if not ctx.active or vim.v.hlsearch == 0 then
     return ''
@@ -179,6 +203,8 @@ function M.searchcount(ctx)
 end
 
 --- Pending keys of a Normal mode command ('showcmd'); needs 'showcmdloc' = 'statusline'.
+---@param ctx neat.statusline.Context
+---@return string
 function M.showcmd(ctx)
   if not ctx.active or vim.o.showcmdloc ~= 'statusline' then
     return ''

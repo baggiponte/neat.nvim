@@ -6,8 +6,8 @@
 local Win = require("neat.win")
 local util = require("neat.util")
 
----@class ui.notifier
----@overload fun(msg: string, level?: ui.notifier.level|number, opts?: ui.notifier.Notif.opts): number|string
+---@class neat.notify.notifier
+---@overload fun(msg: string, level?: neat.notify.notifier.level|number, opts?: neat.notify.notifier.Notif.opts): number|string
 local M = setmetatable({}, {
   __call = function(t, ...)
     return t.notify(...)
@@ -20,32 +20,32 @@ local uv = vim.uv
 --- * compact: use border for icon and title
 --- * minimal: no border, only icon and message
 --- * fancy: similar to the default nvim-notify style
----@alias ui.notifier.style ui.notifier.render|"compact"|"fancy"|"minimal"
+---@alias neat.notify.notifier.style neat.notify.notifier.render|"compact"|"fancy"|"minimal"
 
 --- ### Notifications
 ---
 --- Notification options
----@class ui.notifier.Notif.opts
+---@class neat.notify.notifier.Notif.opts
 ---@field id? number|string
 ---@field msg? string
----@field level? number|ui.notifier.level
+---@field level? number|neat.notify.notifier.level
 ---@field title? string
 ---@field icon? string
 ---@field timeout? number|boolean timeout in ms. Set to 0|false to keep until manually closed
 ---@field ft? string
----@field keep? fun(notif: ui.notifier.Notif): boolean
----@field style? ui.notifier.style
----@field opts? fun(notif: ui.notifier.Notif) -- dynamic opts
----@field hl? ui.notifier.hl -- highlight overrides
+---@field keep? fun(notif: neat.notify.notifier.Notif): boolean
+---@field style? neat.notify.notifier.style
+---@field opts? fun(notif: neat.notify.notifier.Notif) -- dynamic opts
+---@field hl? neat.notify.notifier.hl -- highlight overrides
 ---@field history? boolean
 
 --- Notification object
----@class ui.notifier.Notif: ui.notifier.Notif.opts
+---@class neat.notify.notifier.Notif: neat.notify.notifier.Notif.opts
 ---@field id number|string
 ---@field msg string
 ---@field win? neat.win
 ---@field icon string
----@field level ui.notifier.level
+---@field level neat.notify.notifier.level
 ---@field timeout number
 ---@field dirty? boolean
 ---@field added number timestamp with nano precision
@@ -55,28 +55,28 @@ local uv = vim.uv
 ---@field layout? { top?: number, width: number, height: number }
 
 --- ### Rendering
----@alias ui.notifier.render fun(buf: number, notif: ui.notifier.Notif, ctx: ui.notifier.ctx)
+---@alias neat.notify.notifier.render fun(buf: number, notif: neat.notify.notifier.Notif, ctx: neat.notify.notifier.ctx)
 
----@class ui.notifier.hl
+---@class neat.notify.notifier.hl
 ---@field title string
 ---@field icon string
 ---@field border string
 ---@field footer string
 ---@field msg string
 
----@class ui.notifier.ctx
+---@class neat.notify.notifier.ctx
 ---@field opts neat.win.Config
----@field notifier ui.notifier.Class
----@field hl ui.notifier.hl
+---@field notifier neat.notify.notifier.Class
+---@field hl neat.notify.notifier.hl
 ---@field ns number
 
 --- ### History
----@class ui.notifier.history
----@field filter? ui.notifier.level|fun(notif: ui.notifier.Notif): boolean
+---@class neat.notify.notifier.history
+---@field filter? neat.notify.notifier.level|fun(notif: neat.notify.notifier.Notif): boolean
 ---@field sort? string[] # sort fields, default: {"added"}
 ---@field reverse? boolean
 
----@type ui.notifier.history
+---@type neat.notify.notifier.history
 local history_opts = {
   sort = { "added" },
 }
@@ -108,10 +108,10 @@ util.style("notification_history", {
   keys = { q = "close" },
 })
 
----@class ui.notifier.Config
+---@class neat.notify.notifier.Config
 ---@field enabled? boolean
----@field keep? fun(notif: ui.notifier.Notif): boolean # global keep function
----@field filter? fun(notif: ui.notifier.Notif): boolean # filter our unwanted notifications (return false to hide)
+---@field keep? fun(notif: neat.notify.notifier.Notif): boolean # global keep function
+---@field filter? fun(notif: neat.notify.notifier.Notif): boolean # filter our unwanted notifications (return false to hide)
 local defaults = {
   timeout = 3000, -- default timeout in ms
   width = { min = 40, max = 0.4 },
@@ -133,39 +133,41 @@ local defaults = {
   keep = function(notif)
     return vim.fn.getcmdpos() > 0
   end,
-  ---@type ui.notifier.style
+  ---@type neat.notify.notifier.style
   style = "compact",
   top_down = true, -- place notifications from top to bottom
   date_format = "%R", -- time format for notifications
   -- format for footer when more lines are available
   -- `%d` is replaced with the number of lines.
   -- only works for styles with a border
-  ---@type string|boolean
+  ---@type string|false
   more_format = " ↓ %d lines ",
   refresh = 50, -- refresh at most every 50ms
 }
 
----@class ui.notifier.Class
----@field queue table<string|number, ui.notifier.Notif>
----@field history table<string|number, ui.notifier.Notif>
----@field sorted? ui.notifier.Notif[]
----@field opts ui.notifier.Config
+---@class neat.notify.notifier.Class
+---@field queue table<string|number, neat.notify.notifier.Notif>
+---@field history table<string|number, neat.notify.notifier.Notif>
+---@field sorted? neat.notify.notifier.Notif[]
+---@field opts neat.notify.notifier.Config
 local N = {}
 
 N.ns = vim.api.nvim_create_namespace("ui.notifier")
 
 ---@param str string
+---@return string
 local function cap(str)
   return str:sub(1, 1):upper() .. str:sub(2):lower()
 end
 
 ---@param name string
----@param level? ui.notifier.level
+---@param level? neat.notify.notifier.level
+---@return string
 local function hl(name, level)
   return "UiNotifier" .. name .. (level and cap(level) or "")
 end
 
----@type table<string, ui.notifier.render>
+---@type table<string, neat.notify.notifier.render>
 N.styles = {
   -- style using border title
   compact = function(buf, notif, ctx)
@@ -235,9 +237,9 @@ N.styles = {
   end,
 }
 
----@alias ui.notifier.level "trace"|"debug"|"info"|"warn"|"error"
+---@alias neat.notify.notifier.level "trace"|"debug"|"info"|"warn"|"error"
 
----@type table<number, ui.notifier.level>
+---@type table<number, neat.notify.notifier.level>
 N.levels = {
   [vim.log.levels.TRACE] = "trace",
   [vim.log.levels.DEBUG] = "debug",
@@ -245,10 +247,10 @@ N.levels = {
   [vim.log.levels.WARN] = "warn",
   [vim.log.levels.ERROR] = "error",
 }
-N.level_names = vim.tbl_values(N.levels) ---@type ui.notifier.level[]
+N.level_names = vim.tbl_values(N.levels) ---@type neat.notify.notifier.level[]
 
 ---@param level number|string
----@return ui.notifier.level
+---@return neat.notify.notifier.level
 local function normlevel(level)
   return type(level) == "string" and (vim.tbl_contains(N.level_names, level:lower()) and level:lower() or "info")
     or N.levels[level]
@@ -277,8 +279,8 @@ local function next_id()
   return _id
 end
 
----@param opts? ui.notifier.Config
----@return ui.notifier.Class
+---@param opts? neat.notify.notifier.Config
+---@return neat.notify.notifier.Class
 function N.new(opts)
   local self = setmetatable({}, { __index = N })
   self.opts = util.get("notifier", defaults, opts)
@@ -339,9 +341,9 @@ function N:start()
         end
         local trace = debug.traceback(2)
         vim.schedule(function()
-          vim.api.nvim_err_writeln(
-            ("neat.nvim notifier failed. Dropping queue. Error:\n%s\n\nTrace:\n%s"):format(err, trace)
-          )
+          vim.api.nvim_echo({
+            { ("neat.nvim notifier failed. Dropping queue. Error:\n%s\n\nTrace:\n%s"):format(err, trace), "ErrorMsg" },
+          }, true, { err = true })
         end)
         self.queue = {}
       end)
@@ -365,10 +367,11 @@ function N:is_blocking()
   return mode.blocking
 end
 
----@param opts ui.notifier.Notif.opts
+---@param opts neat.notify.notifier.Notif.opts
+---@return integer|string id
 function N:add(opts)
   local now = ts()
-  local notif = vim.deepcopy(opts) --[[@as ui.notifier.Notif]]
+  local notif = vim.deepcopy(opts) --[[@as neat.notify.notifier.Notif]]
   notif.msg = notif.msg or ""
 
   -- NOTE: support nvim-notify style replace
@@ -388,7 +391,7 @@ function N:add(opts)
   notif.added = now
 
   if opts.id and self.queue[opts.id] then
-    local n = self.queue[opts.id] --[[@as ui.notifier.Notif]]
+    local n = self.queue[opts.id] --[[@as neat.notify.notifier.Notif]]
     notif.added = n.added
     notif.updated = now
     notif.shown = n.shown and now or nil -- reset shown time
@@ -433,10 +436,10 @@ function N:update()
   self.sorted = self.sorted or self:sort()
 end
 
----@param opts? ui.notifier.history
----@return ui.notifier.Notif[]
+---@param opts? neat.notify.notifier.history
+---@return neat.notify.notifier.Notif[]
 function N:get_history(opts)
-  ---@type ui.notifier.history
+  ---@type neat.notify.notifier.history
   opts = vim.tbl_deep_extend("force", {}, history_opts, opts or {})
   local notifs = vim.tbl_values(self.history)
   local filter = opts.filter
@@ -458,7 +461,8 @@ function N:get_history(opts)
   return ret
 end
 
----@param opts? ui.notifier.history
+---@param opts? neat.notify.notifier.history
+---@return neat.win? nil when it closed the open history instead
 function N:show_history(opts)
   if vim.bo.filetype == "ui_notif_history" then
     vim.cmd("close")
@@ -505,22 +509,24 @@ end
 ---@param min number
 ---@param max number
 ---@param parent number
+---@return number
 local function dim(value, min, max, parent)
   min = math.floor(min < 1 and (parent * min) or min)
   max = math.floor(max < 1 and (parent * max) or max)
   return math.min(max, math.max(min, value))
 end
 
----@param style? ui.notifier.style
----@return ui.notifier.render
+---@param style? neat.notify.notifier.style
+---@return neat.notify.notifier.render
 function N:get_render(style)
   style = style or self.opts.style
   return type(style) == "function" and style or N.styles[style] or N.styles.compact
 end
 
----@param notif ui.notifier.Notif
+---@param notif neat.notify.notifier.Notif
+---@return neat.notify.notifier.hl
 function N:hl(notif)
-  ---@type ui.notifier.hl
+  ---@type neat.notify.notifier.hl
   return vim.tbl_extend("force", {
     title = hl("Title", notif.level),
     icon = hl("Icon", notif.level),
@@ -530,13 +536,13 @@ function N:hl(notif)
   }, notif.hl or {})
 end
 
----@param notif ui.notifier.Notif
+---@param notif neat.notify.notifier.Notif
 function N:render(notif)
   if type(notif.opts) == "function" then
     notif.opts(notif)
   end
 
-  ---@type ui.notifier.hl
+  ---@type neat.notify.notifier.hl
   local notif_hl = self:hl(notif)
 
   local win = notif.win
@@ -596,8 +602,9 @@ function N:render(notif)
   local wanted_height = height
   height = dim(height, self.opts.height.min, self.opts.height.max, vim.o.lines)
 
-  if wanted_height > height and win:has_border() and self.opts.more_format and not win.opts.footer then
-    win.opts.footer = self.opts.more_format:format(wanted_height - height)
+  local more_format = self.opts.more_format
+  if wanted_height > height and win:has_border() and type(more_format) == "string" and not win.opts.footer then
+    win.opts.footer = more_format:format(wanted_height - height)
     win.opts.footer_pos = "right"
   end
 
@@ -605,13 +612,16 @@ function N:render(notif)
   win.opts.height = height
 end
 
----@param notifs? ui.notifier.Notif[]
+---@param notifs? neat.notify.notifier.Notif[]
 ---@param fields? string[]
+---@return neat.notify.notifier.Notif[]
 function N:sort(notifs, fields)
   fields = fields or self.opts.sort
   notifs = notifs or vim.tbl_values(self.queue)
   table.sort(notifs, function(a, b)
     for _, key in ipairs(fields) do
+      ---@param n neat.notify.notifier.Notif
+      ---@return any
       local function v(n)
         if key == "level" then
           return 10 - numlevel(n[key])
@@ -629,7 +639,7 @@ function N:sort(notifs, fields)
 end
 
 function N:new_layout()
-  ---@class ui.notifier.layout
+  ---@class neat.notify.notifier.layout
   local layout = {}
   layout.free = 0
   layout.rows = {} ---@type boolean[]
@@ -644,6 +654,7 @@ function N:new_layout()
   end
   ---@param height number
   ---@param row? number wanted row
+  ---@return integer? row
   function layout.find(height, row)
     local from, to, down = row or 1, vim.o.lines - height, self.opts.top_down
     for i = down and from or to, down and to or from, down and 1 or -1 do
@@ -725,8 +736,9 @@ function N.in_search()
 end
 
 ---@param msg string
----@param level? ui.notifier.level|number
----@param opts? ui.notifier.Notif.opts
+---@param level? neat.notify.notifier.level|number
+---@param opts? neat.notify.notifier.Notif.opts
+---@return integer|string id
 function N:notify(msg, level, opts)
   opts = opts or {}
   opts.msg = msg
@@ -735,30 +747,33 @@ function N:notify(msg, level, opts)
 end
 
 -- Global instance, created on first use so `require("neat").setup()` options apply.
-local notifier ---@type ui.notifier.Class?
+local notifier ---@type neat.notify.notifier.Class?
 local function get()
   notifier = notifier or N.new()
   return notifier
 end
 
 ---@param msg string
----@param level? ui.notifier.level|number
----@param opts? ui.notifier.Notif.opts
+---@param level? neat.notify.notifier.level|number
+---@param opts? neat.notify.notifier.Notif.opts
+---@return integer|string id
 function M.notify(msg, level, opts)
   return get():notify(msg, level, opts)
 end
 
 ---@param id? number|string
 function M.hide(id)
-  return get():hide(id)
+  get():hide(id)
 end
 
----@param opts? ui.notifier.history
+---@param opts? neat.notify.notifier.history
+---@return neat.notify.notifier.Notif[]
 function M.get_history(opts)
   return get():get_history(opts)
 end
 
----@param opts? ui.notifier.history
+---@param opts? neat.notify.notifier.history
+---@return neat.win?
 function M.show_history(opts)
   return get():show_history(opts)
 end

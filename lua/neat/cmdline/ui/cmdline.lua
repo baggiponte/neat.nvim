@@ -34,7 +34,7 @@ M.active = nil
 
 ---@alias NoiceCmdlineFormatter fun(cmdline: NoiceCmdline): {icon?:string, offset?:number, view?:NoiceViewOptions}
 
----@class CmdlineState
+---@class neat.cmdline.State
 ---@field content {[1]: integer, [2]: string}[]
 ---@field pos number
 ---@field firstc string
@@ -43,7 +43,7 @@ M.active = nil
 ---@field level number
 ---@field block? table
 
----@class CmdlineFormat
+---@class neat.cmdline.Format
 ---@field name string
 ---@field kind string
 ---@field pattern? string|string[]
@@ -56,12 +56,12 @@ M.active = nil
 ---@field lang? string
 
 ---@class NoiceCmdline
----@field state CmdlineState
+---@field state neat.cmdline.State
 ---@field offset integer
----@overload fun(state:CmdlineState): NoiceCmdline
+---@overload fun(state:neat.cmdline.State): NoiceCmdline
 local Cmdline = Object("NoiceCmdline")
 
----@param state CmdlineState
+---@param state neat.cmdline.State
 function Cmdline:init(state)
   self.state = state or {}
   self.offset = 0
@@ -76,17 +76,19 @@ function Cmdline:get()
   )
 end
 
----@return CmdlineFormat
+---@return neat.cmdline.Format
 function Cmdline:get_format()
+  -- config.cmdline.setup() dropped the formats set to false
+  local formats = Config.options.cmdline.format --[[@as table<string, neat.cmdline.Format>]]
   if self.state.prompt and self.state.prompt ~= "" then
-    return Config.options.cmdline.format.input
+    return formats.input
   end
   local line = self.state.firstc .. self:get()
 
-  ---@type {offset:number, format: CmdlineFormat}[]
+  ---@type {offset:number, format: neat.cmdline.Format}[]
   local ret = {}
 
-  for _, format in pairs(Config.options.cmdline.format) do
+  for _, format in pairs(formats) do
     local patterns = type(format.pattern) == "table" and format.pattern or { format.pattern }
     ---@cast patterns string[]
     for _, pattern in ipairs(patterns) do
@@ -116,7 +118,7 @@ function Cmdline:get_format()
 end
 
 ---@param message NoiceMessage
----@return CmdlineFormat
+---@return neat.cmdline.Format
 function Cmdline:format(message)
   local format = self:get_format()
   message.fix_cr = false
@@ -177,10 +179,19 @@ M.cmdlines = {}
 -- such as "[Y]es, (N)o: " or "replace with x? (y)es/(n)o/...". Those are
 -- drawn by cmdline.confirm (or by ui2 with `confirm.style = "ui2"`).
 ---@param prompt? string
+---@return boolean
 function M.is_confirm(prompt)
   return prompt ~= nil and prompt:find("[%(%[]%w[%)%]]%w") ~= nil
 end
 
+--- `cmdline_show` UI event.
+---@param event string
+---@param content [integer, string][] chunks: attribute id, text
+---@param pos integer cursor byte position
+---@param firstc string
+---@param prompt string
+---@param indent integer
+---@param level integer
 function M.on_show(event, content, pos, firstc, prompt, indent, level)
   local Confirm = require("neat.cmdline.confirm")
   if prompt ~= nil and prompt ~= "" and Confirm.enabled() then
@@ -210,6 +221,9 @@ function M.on_show(event, content, pos, firstc, prompt, indent, level)
   end
 end
 
+--- `cmdline_hide` UI event.
+---@param _ string event
+---@param level integer
 function M.on_hide(_, level)
   require("neat.cmdline.confirm").reset()
   if M.cmdlines[level] then
@@ -224,6 +238,10 @@ function M.on_hide(_, level)
   end
 end
 
+--- `cmdline_pos` UI event.
+---@param _ string event
+---@param pos integer
+---@param level integer
 function M.on_pos(_, pos, level)
   local c = M.cmdlines[level]
   if c and c.state.pos ~= pos then
@@ -232,7 +250,7 @@ function M.on_pos(_, pos, level)
   end
 end
 
----@class CmdlinePosition
+---@class neat.cmdline.Position
 ---@field win number Window containing the cmdline
 ---@field buf number Buffer containing the cmdline
 ---@field cursor number

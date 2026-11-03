@@ -9,7 +9,8 @@ local NuiLine = lazy("nui.line")
 ---@module "nui.object"
 local Object = lazy("nui.object")
 
----@alias NoiceChunk { [0]: integer, [1]: string, [2]?: integer}
+--- A `msg_show` chunk: attribute id (or highlight group / attributes), text, highlight id.
+---@alias NoiceChunk { [1]: integer|string|table, [2]: string, [3]?: integer }
 ---@alias NoiceContent string|NoiceChunk|NuiLine|NuiText|NoiceBlock
 
 ---@class NoiceBlock
@@ -35,6 +36,7 @@ function Block:content()
   return table.concat(
     vim.tbl_map(
       ---@param line NuiLine
+      ---@return string
       function(line)
         return line:content()
       end,
@@ -68,7 +70,7 @@ function Block:is_empty()
   return #self._lines == 0
 end
 
----@param bufnr number buffer number
+---@param bufnr integer buffer number
 ---@param ns_id number namespace id
 ---@param linenr_start? number line number (1-indexed)
 function Block:highlight(bufnr, ns_id, linenr_start)
@@ -81,17 +83,21 @@ function Block:highlight(bufnr, ns_id, linenr_start)
   end
 end
 
+--- Forget extmark ids so the texts render again as new extmarks. Like noice,
+--- this reaches into NuiText's protected `extmark`.
 function Block:_fix_extmarks()
   for _, line in ipairs(self._lines) do
     for _, text in ipairs(line._texts) do
-      if text.extmark then
-        text.extmark.id = nil
+      ---@diagnostic disable-next-line: invisible
+      local extmark = text.extmark
+      if extmark then
+        extmark.id = nil
       end
     end
   end
 end
 
----@param bufnr number buffer number
+---@param bufnr integer buffer number
 ---@param ns_id number namespace id
 ---@param linenr_start? number start line number (1-indexed)
 ---@param linenr_end? number end line number (1-indexed)

@@ -11,7 +11,7 @@
 
 local M = {}
 
----@alias neat.notify.Notify fun(msg: string, level?: integer, opts?: table)
+---@alias neat.notify.Notify fun(msg: string, level?: integer, opts?: table): any
 
 --- A vim.notify() implementation.
 ---@class neat.notify.Backend

@@ -46,7 +46,9 @@ function M.check()
     health.info("'termguicolors' is off: using 256-colour approximations of the palette")
   end
 
-  local providers = sl.config.providers
+  local providers = assert(sl.config.providers) -- merged with the defaults
+  ---@param p string|table|false|nil
+  ---@return string
   local function name_of(p)
     return type(p) == 'string' and p or (p == false and 'none' or 'your own')
   end

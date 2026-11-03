@@ -6,6 +6,9 @@ if vim.g.loaded_neat then
 end
 vim.g.loaded_neat = true
 
+--- "on"/"enable" -> true, "off"/"disable" -> false, anything else ("toggle", nil) -> nil.
+---@param arg string?
+---@return boolean?
 local function on_off(arg)
   if arg == "on" or arg == "enable" then
     return true

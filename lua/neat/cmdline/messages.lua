@@ -21,12 +21,12 @@ local MARK = "__neat_msg_show"
 
 ---@alias neat.cmdline.MessageRoute "notify"|"pager"|"auto"|"ui2"
 
----@class CmdlineMessagesOptions
+---@class neat.cmdline.MessagesConfig
 ---@field enabled boolean
 ---@field routes table<string, neat.cmdline.MessageRoute|false> msg_show kind -> route; unlisted kinds stay with ui2
 ---@field pager_lines integer "auto" routes open the pager above this many lines
 
----@type CmdlineMessagesOptions
+---@type neat.cmdline.MessagesConfig
 M.opts = {
   enabled = true,
   routes = {},
@@ -72,15 +72,17 @@ end
 --- "pager") instead of the configured one when given.
 ---@param target? string
 ---@param kind string
+---@param ... any the rest of msg_show's arguments
 function M.forward(target, kind, ...)
   local ui2 = get_ui2()
   local real = ui2 and ui2.msg[MARK]
-  if not real then
+  if not (ui2 and real) then
     return
   end
   local targets = target and type(ui2.cfg) == "table" and type(ui2.cfg.msg) == "table" and ui2.cfg.msg.targets
   if type(targets) ~= "table" then
-    return real(kind, ...)
+    real(kind, ...)
+    return
   end
   local old = targets[kind]
   targets[kind] = target
@@ -98,21 +100,24 @@ local notifying = false
 ---@param replace_last boolean
 ---@param history boolean
 ---@param append boolean
+---@param ... any msg_show arguments added by later Neovim versions
 local function msg_show(kind, content, replace_last, history, append, ...)
   if kind == "confirm" then
     local Confirm = require("neat.cmdline.confirm")
     if Confirm.enabled() then
       local rest = vim.F.pack_len(...)
-      return Confirm.on_message(content, function()
+      Confirm.on_message(content, function()
         M.forward(nil, kind, content, replace_last, history, append, vim.F.unpack_len(rest))
       end)
+      return
     end
   end
 
   local route = M.opts.enabled and M.opts.routes[kind] or nil
   -- `:echon` continues the previous message, which ui2 is showing
   if not route or route == "ui2" or append then
-    return M.forward(nil, kind, content, replace_last, history, append, ...)
+    M.forward(nil, kind, content, replace_last, history, append, ...)
+    return
   end
 
   local text = M.text(content)
@@ -135,7 +140,7 @@ local function msg_show(kind, content, replace_last, history, append, ...)
     M.forward(nil, kind, content, replace_last, history, append, ...)
     error(err, 0)
   end
-  return M.forward(route == "pager" and "pager" or nil, kind, content, replace_last, history, append, ...)
+  M.forward(route == "pager" and "pager" or nil, kind, content, replace_last, history, append, ...)
 end
 
 local function patch()
@@ -151,7 +156,7 @@ local function patch()
   return true
 end
 
----@param opts? CmdlineMessagesOptions
+---@param opts? neat.cmdline.MessagesConfig
 function M.setup(opts)
   M.opts = vim.tbl_deep_extend("force", M.opts, opts or {})
   patch()

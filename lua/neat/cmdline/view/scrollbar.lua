@@ -15,13 +15,13 @@ local Util = lazy("neat.cmdline.util")
 ---@field bar {bufnr:integer, winnr:integer}?
 ---@field thumb {bufnr:integer, winnr:integer}?
 ---@field visible boolean
----@field opts ScrollbarOptions
----@overload fun(opts?:ScrollbarOptions):NoiceScrollbar
+---@field opts neat.cmdline.ScrollbarOptions
+---@overload fun(opts?:neat.cmdline.ScrollbarOptions):NoiceScrollbar
 local Scrollbar = Object("NuiScrollbar")
 
 local id = 0
 
----@class ScrollbarOptions
+---@class neat.cmdline.ScrollbarOptions
 local defaults = {
   winnr = 0,
   autohide = true,
@@ -38,7 +38,7 @@ local defaults = {
   },
 }
 
----@param opts? ScrollbarOptions
+---@param opts? neat.cmdline.ScrollbarOptions
 function Scrollbar:init(opts)
   self.opts = vim.tbl_deep_extend("force", defaults, opts or {})
   self.winnr = self.opts.winnr == 0 and vim.api.nvim_get_current_win() or self.opts.winnr
@@ -158,6 +158,8 @@ function Scrollbar:update()
   })
 end
 
+---@param opts {normal: string} highlight group for the window
+---@return {bufnr: integer, winnr: integer}
 function Scrollbar:_open_win(opts)
   local bufnr = vim.api.nvim_create_buf(false, true)
   Util.tag(bufnr, "scrollbar")

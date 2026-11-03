@@ -6,6 +6,8 @@
 -- Scenarios: off, statusline, ui, cmdline (cmdline needs nui.nvim on 'rtp' too).
 -- Runs before plugin/ (so it can set vim.g.neat), tests after VimEnter, and
 -- exits non-zero on the first failure.
+-- Tests stub functions (vim.ui.select, vim.notify, ...) and pass wrong types on purpose.
+---@diagnostic disable: duplicate-set-field
 local name = assert(os.getenv("SMOKE"), "set SMOKE to off, statusline, ui or cmdline")
 local failures = 0
 -- Neovim 0.12 ships a default 'statusline'; "off" must leave it as it was
@@ -49,8 +51,8 @@ function tests.off()
   end
   check(vim.go.statusline == initial_statusline, "'statusline' is untouched")
   vim.cmd("helptags doc")
-  check(pcall(vim.cmd, "help neat"), ":h neat")
-  check(pcall(vim.cmd, "help :Neat-indent"), ":h :Neat-indent")
+  check(pcall(vim.cmd.help, "neat"), ":h neat")
+  check(pcall(vim.cmd.help, ":Neat-indent"), ":h :Neat-indent")
   vim.cmd("helpclose")
   check(not pcall(require("neat").setup, { notify = { enabled = "yes" } }), "setup() rejects a non-boolean enabled")
   check(#health_errors() == 0, ":checkhealth neat has no errors")
@@ -81,6 +83,7 @@ function tests.statusline()
   check(sl.render():find("indexing", 1, true) == nil, "progress clears on end")
   sl.setup({ lsp_scope = "buffer" })
   check(sl.config.lsp_scope == "buffer", "setup() again applies new options")
+  ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
   check(not pcall(sl.setup, { lsp_scope = 1 }), "setup() rejects a wrong type")
   sl.setup({})
 
@@ -146,6 +149,7 @@ function tests.statusline()
   status = { head = "other" }
   vim.api.nvim_exec_autocmds("User", { pattern = "SmokeGit" })
   check(sl.render():find("other", 1, true) ~= nil, "providers.git: its events drop the cached status")
+  ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
   check(not pcall(sl.setup, { providers = { icons = "nope" } }), "providers: an unknown name is rejected")
   sl.setup({ providers = { icons = false, git = false } })
   check(sl.render():find("<lua>", 1, true) == nil, "providers.icons = false: no icon")
@@ -235,6 +239,7 @@ function tests.ui()
     return fallback_items ~= nil
   end)
   check(fallback_items ~= nil, "select: without telescope, vim.ui.select falls back to the one it replaced")
+  ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
   check(not pcall(sel.setup, { backend = "nope" }), "select rejects an unknown backend")
   sel.setup({ backend = "telescope" })
 
@@ -260,7 +265,7 @@ function tests.ui()
   vim.api.nvim_win_set_cursor(0, { 1, 4 }) -- between the words: <cword> is the next one
   require("neat.spell").suggest()
   check(got ~= nil and got.prompt == 'Change "wrold" to', "z= between words takes the next word, like <cword>")
-  check(vim.api.nvim_get_current_line() == "the  " .. got.items[1], "z= replaces only that word")
+  check(got ~= nil and vim.api.nvim_get_current_line() == "the  " .. got.items[1], "z= replaces only that word")
   vim.ui.select = select
   vim.cmd("bwipeout!")
   vim.cmd("edit tests/smoke.lua")
@@ -282,6 +287,7 @@ function tests.ui()
     return answer ~= nil
   end)
   check(answer == "neat", "input: <CR> confirms the text")
+  ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
   check(not pcall(require("neat.notify").setup, { backend = "nope" }), "notify rejects an unknown backend")
   check(not loaded("snacks"), "snacks.nvim is never required")
   check(#health_errors() == 0, ":checkhealth neat has no errors")
@@ -294,6 +300,7 @@ function tests.cmdline()
   check(Config.is_running(), ":Neat cmdline enable")
   vim.cmd("Neat cmdline toggle")
   check(not Config.is_running(), ":Neat cmdline toggle")
+  ---@diagnostic disable-next-line: assign-type-mismatch, missing-fields
   check(not pcall(Config.setup, { confirm = { style = "nope" } }), "setup rejects a wrong confirm.style")
   Config.setup({})
   require("neat").setup({ cmdline = { enabled = true } })
@@ -314,7 +321,7 @@ function tests.cmdline()
   -- message routing, against a stand-in for ui2's private module layout
   local shown = {} ---@type {kind: string, target: string?, prompt: boolean}[]
   local fake = { cmd = { prompt = false, level = 0 }, cfg = { msg = { targets = { default = "msg" } } }, msg = {} }
-  function fake.msg.msg_show(kind)
+  function fake.msg.msg_show(kind, ...)
     shown[#shown + 1] = { kind = kind, target = fake.cfg.msg.targets[kind], prompt = fake.cmd.prompt }
   end
   package.loaded["vim._core.ui2"] = fake

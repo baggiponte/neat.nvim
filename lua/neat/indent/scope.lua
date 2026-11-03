@@ -5,29 +5,30 @@
 
 local util = require("neat.util")
 
----@class ui.scope
+---@class neat.indent.scope
 local M = {}
 
 M.meta = {
   desc = "Scope detection, text objects and jumping based on treesitter or indent",
 }
 
----@class ui.scope.Opts: ui.scope.Config,{}
+---@class neat.indent.scope.Opts: neat.indent.scope.Config,{}
 ---@field buf? number
 ---@field pos? {[1]:number, [2]:number} -- (1,0) indexed
 ---@field end_pos? {[1]:number, [2]:number} -- (1,0) indexed
+---@field parse? boolean false once the treesitter tree has been parsed for this call
 
----@class ui.scope.TextObject: ui.scope.Opts
+---@class neat.indent.scope.TextObject: neat.indent.scope.Opts
 ---@field linewise? boolean if nil, use visual mode. Defaults to `false` when not in visual mode
 ---@field notify? boolean show a notification when no scope is found (defaults to true)
 
----@class ui.scope.Jump: ui.scope.Opts
+---@class neat.indent.scope.Jump: neat.indent.scope.Opts
 ---@field bottom? boolean if true, jump to the bottom of the scope, otherwise to the top
 ---@field notify? boolean show a notification when no scope is found (defaults to true)
 
----@alias ui.scope.Attach.cb fun(win: number, buf: number, scope:ui.scope.Scope?, prev:ui.scope.Scope?)
+---@alias neat.indent.scope.Attach.cb fun(win: number, buf: number, scope:neat.indent.scope.Scope?, prev:neat.indent.scope.Scope?)
 
----@class ui.scope.Config
+---@class neat.indent.scope.Config
 ---@field max_size? number
 ---@field enabled? boolean
 local defaults = {
@@ -77,59 +78,64 @@ M.TS_ASYNC = (vim.treesitter.languagetree or {})._async_parse ~= nil
 
 local id = 0
 
----@alias ui.scope.scope {buf: number, from: number, to: number, indent?: number}
+---@alias neat.indent.scope.scope {buf: number, from: number, to: number, indent?: number}
 
----@class ui.scope.Scope
+---@class neat.indent.scope.Scope
 ---@field buf number
 ---@field from number
 ---@field to number
 ---@field indent? number
----@field opts ui.scope.Opts
+---@field opts neat.indent.scope.Opts
+---@field __eq? fun(a: neat.indent.scope.Scope, b: neat.indent.scope.Scope): boolean
+---@field __tostring? fun(self: neat.indent.scope.Scope): string
 local Scope = {}
 Scope.__index = Scope
 
----@generic T: ui.scope.Scope
+---@generic T: neat.indent.scope.Scope
 ---@param self T
----@param scope ui.scope.scope
----@param opts ui.scope.Opts
+---@param scope neat.indent.scope.scope
+---@param opts neat.indent.scope.Opts
 ---@return T
 function Scope:new(scope, opts)
-  local ret = setmetatable(scope, { __index = self, __eq = self.__eq, __tostring = self.__tostring })
+  local class = self --[[@as neat.indent.scope.Scope]]
+  local ret = setmetatable(scope, { __index = self, __eq = class.__eq, __tostring = class.__tostring })
   ret.opts = opts
   return ret
 end
 
+---@param other neat.indent.scope.Scope?
+---@return boolean
 function Scope:__eq(other)
-  return other
+  return other ~= nil
     and self.buf == other.buf
     and self.from == other.from
     and self.to == other.to
     and self.indent == other.indent
 end
 
----@generic T: ui.scope.Scope
+---@generic T: neat.indent.scope.Scope
 ---@param self T
----@param opts ui.scope.Opts
+---@param opts neat.indent.scope.Opts
 ---@return T?
 function Scope:find(opts)
   error("not implemented")
 end
 
----@generic T: ui.scope.Scope
+---@generic T: neat.indent.scope.Scope
 ---@param self T
 ---@return T?
 function Scope:parent()
   error("not implemented")
 end
 
----@generic T: ui.scope.Scope
+---@generic T: neat.indent.scope.Scope
 ---@param self T
 ---@return T
 function Scope:with_edge()
   error("not implemented")
 end
 
----@generic T: ui.scope.scope
+---@generic T: neat.indent.scope.scope
 ---@param self T
 ---@return T
 function Scope:inner()
@@ -137,18 +143,21 @@ function Scope:inner()
 end
 
 ---@param line number
+--- (snacks wrote `ret == -1 and nil or ret`, which always yields `ret`: the
+--- callers compare the result as a number, so -1 it is.)
+---@return integer indent -1 for a line outside the buffer
+---@return integer line the line that was measured
 function Scope.get_indent(line)
-  local ret = vim.fn.indent(line)
-  return ret == -1 and nil or ret, line
+  return vim.fn.indent(line), line
 end
 
----@generic T: ui.scope.Scope
+---@generic T: neat.indent.scope.Scope
 ---@param self T
 ---@param opts {buf?: number, from?: number, to?: number, indent?: number}}
 ---@return T?
 function Scope:with(opts)
   opts = vim.tbl_extend("keep", opts, self)
-  return setmetatable(opts, getmetatable(self)) --[[ @as ui.scope.Scope ]]
+  return setmetatable(opts, getmetatable(self)) --[[ @as neat.indent.scope.Scope ]]
 end
 
 function Scope:size()
@@ -159,11 +168,12 @@ function Scope:size_with_edge()
   return self:with_edge():size()
 end
 
----@generic T: ui.scope.Scope
+---@generic T: neat.indent.scope.Scope
 ---@param self T
 ---@return T?
+---@param line integer
 function Scope:expand(line)
-  local ret = self ---@type ui.scope.Scope?
+  local ret = self ---@type neat.indent.scope.Scope?
   while ret do
     if line >= ret.from and line <= ret.to then
       return ret
@@ -172,13 +182,14 @@ function Scope:expand(line)
   end
 end
 
----@class ui.scope.IndentScope: ui.scope.Scope
+---@class neat.indent.scope.IndentScope: neat.indent.scope.Scope
 local IndentScope = setmetatable({}, Scope)
 IndentScope.__index = IndentScope
 
 ---@param line number 1-indexed
 ---@param indent number
 ---@param up? boolean
+---@return integer
 function IndentScope._expand(line, indent, up)
   local next = up and vim.fn.prevnonblank or vim.fn.nextnonblank
   while line do
@@ -222,7 +233,8 @@ function IndentScope:with_edge()
   return self:with({ from = from, to = to, indent = indent })
 end
 
----@param opts ui.scope.Opts
+---@param opts neat.indent.scope.Opts
+---@return neat.indent.scope.IndentScope?
 function IndentScope:find(opts)
   local indent, line = Scope.get_indent(opts.pos[1])
   local prev_i, prev_l = Scope.get_indent(vim.fn.prevnonblank(line - 1))
@@ -276,14 +288,17 @@ function IndentScope:parent()
   end
 end
 
----@class ui.scope.TSScope: ui.scope.Scope
+---@class neat.indent.scope.TSScope: neat.indent.scope.Scope
 ---@field node TSNode
 local TSScope = setmetatable({}, Scope)
 TSScope.__index = TSScope
 
 -- Expand the scope to fill the range of the node
 function TSScope:fill()
-  local n = self.node
+  local n = self.node ---@type TSNode?
+  if not n then
+    return
+  end
   local u, _, d = n:range()
   while n do
     local uu, _, dd = n:range()
@@ -305,6 +320,7 @@ function TSScope:fix()
 end
 
 ---@param node? TSNode
+---@return boolean
 function TSScope:is_field(node)
   node = node or self.node
   local parent = node:parent()
@@ -321,7 +337,7 @@ function TSScope:is_field(node)
 end
 
 function TSScope:with_edge()
-  local ret = self ---@type ui.scope.TSScope?
+  local ret = self ---@type neat.indent.scope.TSScope?
   while ret do
     if ret:size() >= 1 and not ret:is_field() then
       return ret
@@ -346,12 +362,14 @@ function TSScope:root()
 end
 
 ---@param opts {buf?: number, from?: number, to?: number, indent?: number, node?: TSNode}}
+---@return neat.indent.scope.TSScope
 function TSScope:with(opts)
-  local ret = Scope.with(self, opts) --[[ @as ui.scope.TSScope ]]
+  local ret = Scope.with(self, opts) --[[ @as neat.indent.scope.TSScope ]]
   return ret:fix()
 end
 
----@param opts ui.scope.Opts
+---@param opts neat.indent.scope.Opts
+---@return vim.treesitter.LanguageTree?
 function TSScope:parser(opts)
   local lang = vim.bo[opts.buf].filetype
   local has_parser, parser = pcall(vim.treesitter.get_parser, opts.buf, lang, { error = false })
@@ -359,11 +377,12 @@ function TSScope:parser(opts)
 end
 
 ---@param cb fun()
----@param opts ui.scope.Opts
+---@param opts neat.indent.scope.Opts
 function TSScope:init(cb, opts)
   local parser = self:parser(opts)
   if not parser then
-    return cb()
+    cb()
+    return
   end
   if M.TS_ASYNC then
     parser:parse(opts.treesitter.injections, cb)
@@ -373,7 +392,8 @@ function TSScope:init(cb, opts)
   end
 end
 
----@param opts ui.scope.Opts
+---@param opts neat.indent.scope.Opts
+---@return neat.indent.scope.TSScope?
 function TSScope:find(opts)
   local lang = vim.treesitter.language.get_lang(vim.bo[opts.buf].filetype)
   local line = vim.fn.nextnonblank(opts.pos[1])
@@ -448,10 +468,10 @@ function Scope:__tostring()
   )
 end
 
----@param cb fun(scope?: ui.scope.Scope)
----@param opts? ui.scope.Opts|{parse?:boolean}
+---@param cb fun(scope?: neat.indent.scope.Scope)
+---@param opts? neat.indent.scope.Opts|{parse?:boolean}
 function M.get(cb, opts)
-  opts = util.get("scope", defaults, opts or {}) --[[ @as ui.scope.Opts ]]
+  opts = util.get("scope", defaults, opts or {}) --[[ @as neat.indent.scope.Opts ]]
   opts.buf = (opts.buf == nil or opts.buf == 0) and vim.api.nvim_get_current_buf() or opts.buf
   if not opts.pos then
     assert(opts.buf == vim.api.nvim_win_get_buf(0), "missing pos")
@@ -466,7 +486,7 @@ function M.get(cb, opts)
     return
   end
 
-  ---@type ui.scope.Scope
+  ---@type neat.indent.scope.Scope
   local Class = (opts.treesitter.enabled and util.get_lang(opts.buf)) and TSScope or IndentScope
   if rawequal(Class, TSScope) and opts.parse ~= false then
     TSScope:init(function()
@@ -475,7 +495,7 @@ function M.get(cb, opts)
     end, opts)
     return
   end
-  local scope = Class:find(opts) --[[ @as ui.scope.Scope? ]]
+  local scope = Class:find(opts) --[[ @as neat.indent.scope.Scope? ]]
 
   -- fallback to indent based detection
   if not scope and rawequal(Class, TSScope) then
@@ -486,7 +506,7 @@ function M.get(cb, opts)
   -- when end_pos is provided, get its scope and expand the current scope
   -- to include it.
   if scope and opts.end_pos and not vim.deep_equal(opts.pos, opts.end_pos) then
-    local end_scope = Class:find(vim.tbl_extend("keep", { pos = opts.end_pos }, opts)) --[[ @as ui.scope.Scope? ]]
+    local end_scope = Class:find(vim.tbl_extend("keep", { pos = opts.end_pos }, opts)) --[[ @as neat.indent.scope.Scope? ]]
     if end_scope and end_scope.from < scope.from then
       scope = scope:expand(end_scope.from) or scope
     end
@@ -501,7 +521,7 @@ function M.get(cb, opts)
   -- expand block with ancestors until min_size is reached
   -- or max_size is reached
   if scope then
-    local s = scope --- @type ui.scope.Scope?
+    local s = scope ---@type neat.indent.scope.Scope?
     while s do
       if opts.edge and scope:size_with_edge() >= min_size and s:size_with_edge() > max_size then
         break
@@ -512,7 +532,7 @@ function M.get(cb, opts)
     end
     -- expand with edge
     if opts.edge then
-      scope = scope:with_edge() --[[@as ui.scope.Scope]]
+      scope = scope:with_edge() --[[@as neat.indent.scope.Scope]]
     end
   end
 
@@ -536,26 +556,27 @@ function M.get(cb, opts)
   cb(scope)
 end
 
----@class ui.scope.Listener
+---@class neat.indent.scope.Listener
 ---@field id integer
----@field cb ui.scope.Attach.cb
----@field opts ui.scope.Config
+---@field cb neat.indent.scope.Attach.cb
+---@field opts neat.indent.scope.Config
 ---@field dirty table<number, boolean>
 ---@field timer uv.uv_timer_t
 ---@field augroup integer
 ---@field enabled boolean
----@field active table<number, ui.scope.Scope>
+---@field active table<number, neat.indent.scope.Scope>
 local Listener = {}
 
----@param cb ui.scope.Attach.cb
----@param opts? ui.scope.Config
+---@param cb neat.indent.scope.Attach.cb
+---@param opts? neat.indent.scope.Config
+---@return neat.indent.scope.Listener
 function Listener.new(cb, opts)
   local self = setmetatable({}, { __index = Listener })
   self.cb = cb
   self.dirty = {}
   self.timer = assert(vim.uv.new_timer())
   self.enabled = false
-  self.opts = util.get("scope", defaults, opts or {}) --[[ @as ui.scope.Opts ]]
+  self.opts = util.get("scope", defaults, opts or {}) --[[ @as neat.indent.scope.Opts ]]
   id = id + 1
   self.id = id
   self.active = {}
@@ -563,6 +584,7 @@ function Listener.new(cb, opts)
 end
 
 --- Check if the scope has changed in the window / buffer
+---@param win integer
 function Listener:check(win)
   local buf = vim.api.nvim_win_get_buf(win)
   if not self.opts.filter(buf) then
@@ -586,6 +608,8 @@ function Listener:check(win)
 end
 
 --- Get the active scope for a window
+---@param win integer
+---@return neat.indent.scope.Scope?
 function Listener:get(win)
   local scope = self.active[win]
   return scope and vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == scope.buf and scope or nil
@@ -664,9 +688,9 @@ function Listener:disable()
 end
 
 --- Attach a scope listener
----@param cb ui.scope.Attach.cb
----@param opts? ui.scope.Config
----@return ui.scope.Listener
+---@param cb neat.indent.scope.Attach.cb
+---@param opts? neat.indent.scope.Config
+---@return neat.indent.scope.Listener
 function M.attach(cb, opts)
   local ret = Listener.new(cb, opts)
   ret:enable()

@@ -162,7 +162,8 @@ local function select(items, opts, on_choice)
 
   local backend, name = M.backend()
   if not backend.available() then
-    return original(items, opts or {}, on_choice)
+    original(items, opts or {}, on_choice)
+    return
   end
 
   local winid = vim.api.nvim_get_current_win()

@@ -55,6 +55,9 @@ function M.check()
     return
   end
   local opts = Config.options
+  ---@param name string
+  ---@param wanted boolean the config asks for this patch
+  ---@param patched boolean
   local function report(name, wanted, patched)
     if not wanted then
       health.info(name .. ": off in config")

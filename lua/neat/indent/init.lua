@@ -7,12 +7,12 @@
 
 local M = {}
 
----@class ui.indent.Config
+---@class neat.indent.Config
 ---@field enabled? boolean
 ---@field backend? "builtin"|"blink"
 ---@field builtin? table options for the builtin guides (same shape as snacks.nvim's `indent`)
 ---@field blink? table options passed to `require("blink.indent").setup()`
----@type ui.indent.Config
+---@type neat.indent.Config
 M.defaults = {
   backend = "builtin",
   builtin = {},
@@ -26,7 +26,7 @@ local function enable_builtin()
   require("neat.indent.guides").enable()
 end
 
----@param opts? ui.indent.Config
+---@param opts? neat.indent.Config
 function M.setup(opts)
   local config = vim.tbl_deep_extend("force", M.defaults, opts or {})
   vim.validate("indent.backend", config.backend, function(v)
