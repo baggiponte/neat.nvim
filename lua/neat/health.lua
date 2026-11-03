@@ -4,7 +4,14 @@ local M = {}
 local health = vim.health
 
 local known = {
-  select = { enabled = true, trim_prompt = true, telescope = true, format_item_override = true },
+  select = {
+    enabled = true,
+    backend = true,
+    trim_prompt = true,
+    telescope = true,
+    builtin = true,
+    format_item_override = true,
+  },
   spell = { enabled = true },
   input = {
     enabled = true,
@@ -77,10 +84,21 @@ function M.check()
   if not enabled("select") then
     health.info("off (set `enabled = true`)")
   else
-    if pcall(require, "telescope") then
-      health.ok("telescope.nvim is installed")
+    local sel = require("neat.select")
+    local backend, name = sel.backend()
+    health.info("backend: " .. (name or "your own"))
+    if backend.available() then
+      health.ok("the backend is available")
+    elseif name == "telescope" then
+      health.warn(
+        "telescope.nvim is not installed: vim.ui.select uses Neovim's menu",
+        {
+          "Install https://github.com/nvim-telescope/telescope.nvim",
+          "or set `select.backend` (`:h neat-select-backend`)",
+        }
+      )
     else
-      health.warn("telescope.nvim is not installed", "vim.ui.select falls back to the builtin menu")
+      health.warn("the backend is not available: vim.ui.select uses Neovim's menu")
     end
     if vim.ui.select == require("neat.select").select then
       health.ok("vim.ui.select is neat.nvim's")
@@ -100,7 +118,7 @@ function M.check()
       health.warn("z= is mapped by something else", "neat leaves an existing z= mapping alone")
     end
     if enabled("select") and vim.ui.select == require("neat.select").select then
-      health.info("vim.ui.select is neat's (telescope, or the builtin menu without it)")
+      health.info("vim.ui.select is neat's (`select.backend`)")
     else
       health.info("vim.ui.select is whatever your config set (Neovim's numbered list by default)")
     end

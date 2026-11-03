@@ -4,7 +4,7 @@
 --   require("neat").setup({
 --     cmdline = { enabled = true },                     -- centred cmdline popup on top of ui2
 --     statusline = { enabled = true },                  -- small cached statusline
---     select = { enabled = true },                      -- vim.ui.select via a telescope dropdown
+--     select = { enabled = true, backend = "telescope" }, -- vim.ui.select through a picker backend
 --     input = { enabled = true },                       -- vim.ui.input in a floating window
 --     notify = { enabled = true, backend = "builtin" },  -- vim.notify toasts
 --     indent = { enabled = true, backend = "builtin" },  -- indent and scope guides
@@ -33,7 +33,7 @@ M.modules = { "notify", "select", "input", "indent", "spell", "statusline", "cmd
 ---@class neat.Config
 ---@field cmdline? cmdline.Opts|neat.Enabled
 ---@field statusline? statusline.Config|neat.Enabled
----@field select? ui.select.Config|neat.Enabled
+---@field select? neat.select.Config|neat.Enabled
 ---@field input? neat.input.Config|neat.Enabled
 ---@field notify? ui.notify.Config|neat.Enabled
 ---@field indent? ui.indent.Config|neat.Enabled

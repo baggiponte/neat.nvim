@@ -139,6 +139,52 @@ function tests.ui()
   check(loaded("neat.notify.notifier"), "the first vim.notify() loads the notifier")
   check(vim.notify == require("neat.notify.notifier").notify, "vim.notify is the notifier after the first call")
   check(vim.ui.select == require("neat.select").select, "vim.ui.select is neat's")
+  check(not loaded("neat.select.backends.telescope"), "the telescope backend is not loaded at startup")
+
+  -- select: a backend of your own gets a normalised copy of the opts
+  local sel = require("neat.select")
+  local got_select ---@type {opts: neat.select.Opts, backend_opts: table?}?
+  sel.setup({
+    backend = {
+      available = function()
+        return true
+      end,
+      select = function(items, opts, on_choice, backend_opts)
+        got_select = { opts = opts, backend_opts = backend_opts }
+        on_choice(items[2], 2)
+      end,
+    },
+  })
+  local caller_opts = { prompt = "Pick\none:" }
+  local choice ---@type {item: any, idx: integer?}?
+  vim.ui.select({ "a", "b" }, caller_opts, function(item, idx)
+    choice = { item = item, idx = idx }
+  end)
+  vim.wait(1000, function()
+    return choice ~= nil
+  end)
+  check(got_select ~= nil and got_select.opts.prompt == "Pick one", "select: the prompt is one line without ':'")
+  check(got_select ~= nil and got_select.opts.format_item(1) == "1", "select: format_item is always set")
+  check(
+    caller_opts.prompt == "Pick\none:" and caller_opts.format_item == nil,
+    "select: the caller's opts are untouched"
+  )
+  check(choice ~= nil and choice.item == "b" and choice.idx == 2, "select: the backend's pick reaches on_choice")
+  -- a backend that is not available falls back to the vim.ui.select neat replaced
+  local fallback_items ---@type any[]?
+  vim.ui.select = function(items, _, on_choice)
+    fallback_items = items
+    on_choice(nil, nil)
+  end
+  sel.setup({ backend = "telescope" })
+  vim.ui.select({ "x" }, {}, function() end)
+  vim.wait(1000, function()
+    return fallback_items ~= nil
+  end)
+  check(fallback_items ~= nil, "select: without telescope, vim.ui.select falls back to the one it replaced")
+  check(not pcall(sel.setup, { backend = "nope" }), "select rejects an unknown backend")
+  sel.setup({ backend = "telescope" })
+
   check(vim.fn.maparg("z=", "n") ~= "", "spell maps z=")
   -- z= hands the suggestions to whatever vim.ui.select is, and replaces the word
   local select = vim.ui.select
