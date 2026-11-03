@@ -8,6 +8,7 @@
 --     input = { enabled = true },                       -- vim.ui.input in a floating window
 --     notify = { enabled = true, backend = "builtin" },  -- vim.notify toasts
 --     indent = { enabled = true, backend = "builtin" },  -- indent and scope guides
+--     spell = { enabled = true },                       -- z= through vim.ui.select
 --   })
 --
 -- or set `vim.g.neat` to the same table before startup. `require("neat.rename")`
@@ -20,11 +21,11 @@
 
 local M = {}
 
----@alias neat.Module "cmdline"|"statusline"|"select"|"input"|"notify"|"indent"
+---@alias neat.Module "cmdline"|"statusline"|"select"|"input"|"notify"|"indent"|"spell"
 
 --- Modules in the order setup() starts them.
 ---@type neat.Module[]
-M.modules = { "notify", "select", "input", "indent", "statusline", "cmdline" }
+M.modules = { "notify", "select", "input", "indent", "spell", "statusline", "cmdline" }
 
 ---@class neat.Enabled
 ---@field enabled? boolean
@@ -36,6 +37,7 @@ M.modules = { "notify", "select", "input", "indent", "statusline", "cmdline" }
 ---@field input? neat.input.Config|neat.Enabled
 ---@field notify? ui.notify.Config|neat.Enabled
 ---@field indent? ui.indent.Config|neat.Enabled
+---@field spell? neat.Enabled
 
 ---@class neat.input.Config
 ---@field icon? string

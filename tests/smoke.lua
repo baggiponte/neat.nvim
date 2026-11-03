@@ -43,7 +43,8 @@ function tests.off()
   check(vim.fn.exists(":Neat") == 2, ":Neat exists")
   check(not loaded("neat"), "nothing is required without vim.g.neat")
   require("neat").setup({})
-  for _, mod in ipairs({ "neat.statusline", "neat.notify", "neat.select", "neat.indent", "neat.cmdline" }) do
+  local modules = { "neat.statusline", "neat.notify", "neat.select", "neat.indent", "neat.cmdline", "neat.spell" }
+  for _, mod in ipairs(modules) do
     check(not loaded(mod), mod .. " is not loaded when off")
   end
   check(vim.go.statusline == initial_statusline, "'statusline' is untouched")
@@ -138,8 +139,24 @@ function tests.ui()
   check(loaded("neat.notify.notifier"), "the first vim.notify() loads the notifier")
   check(vim.notify == require("neat.notify.notifier").notify, "vim.notify is the notifier after the first call")
   check(vim.ui.select == require("neat.select").select, "vim.ui.select is neat's")
-  check(vim.fn.maparg("z=", "n") ~= "", "select maps z= to the spelling picker")
-  check(pcall(require, "neat.select.spell"), "require('neat.select.spell')")
+  check(vim.fn.maparg("z=", "n") ~= "", "spell maps z=")
+  -- z= hands the suggestions to whatever vim.ui.select is, and replaces the word
+  local select = vim.ui.select
+  local got ---@type {items: string[], prompt: string}?
+  vim.ui.select = function(items, opts, on_choice)
+    got = { items = items, prompt = opts.prompt }
+    on_choice(items[1])
+  end
+  vim.cmd("enew")
+  vim.bo.spelllang = "en"
+  vim.wo.spell = true
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "teh cat" })
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  require("neat.spell").suggest()
+  check(got ~= nil and #got.items > 0 and got.prompt == 'Change "teh" to', "z= passes suggestions to vim.ui.select")
+  check(got ~= nil and vim.api.nvim_get_current_line() == got.items[1] .. " cat", "z= replaces the word with the pick")
+  vim.ui.select = select
+  vim.cmd("bwipeout!")
   vim.cmd("edit tests/smoke.lua")
   check(loaded("neat.indent.guides"), "opening a file loads the indent engine")
   vim.cmd("Neat indent off")
@@ -259,6 +276,7 @@ if name == "ui" then
     input = { enabled = true },
     notify = { enabled = true, backend = "builtin" },
     indent = { enabled = true, backend = "builtin" },
+    spell = { enabled = true },
   }
 end
 

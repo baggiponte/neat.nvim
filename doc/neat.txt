@@ -102,9 +102,14 @@ statusline                                                   *neat-statusline*
 
 select                                                           *neat-select*
     |vim.ui.select()| as a telescope dropdown; the builtin menu without
-    telescope. `z=` shows spelling suggestions in the same picker (a count,
-    as in `3z=`, still picks directly). Options: `trim_prompt`, `telescope`,
-    `format_item_override`, `spell` (false keeps the builtin `z=`).
+    telescope. Options: `trim_prompt`, `telescope`, `format_item_override`.
+
+spell                                                             *neat-spell*
+    |z=| lists spelling suggestions through |vim.ui.select()|, so they open
+    in whatever picker implements it (neat's `select`, or another plugin).
+    With Neovim's own |vim.ui.select()| that is the usual numbered list. A
+    count (`3z=`) still picks directly, and an existing `z=` mapping is
+    left alone. No options besides `enabled`.
 
 input                                                             *neat-input*
     |vim.ui.input()| in a floating window with history and completion.

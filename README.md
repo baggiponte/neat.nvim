@@ -13,7 +13,8 @@ nvim-web-devicons when they are there.
 | --- | --- | --- |
 | `cmdline` | Centred command-line popup on top of ui2 | noice.nvim |
 | `statusline` | Small statusline that reads per-buffer caches instead of polling | lualine.nvim |
-| `select` | Telescope dropdown for `vim.ui.select`, with dressing's code-action layout, and `z=` spelling suggestions in the same picker; falls back to the builtin without telescope | dressing.nvim |
+| `select` | Telescope dropdown for `vim.ui.select`, with dressing's code-action layout; falls back to the builtin without telescope | dressing.nvim |
+| `spell` | `z=` lists spelling suggestions through `vim.ui.select`, so they open in your picker (neat's `select`, fzf-lua, snacks, ...) | |
 | `input` | Floating `vim.ui.input` with history and completion (neo-tree's file completion works) | snacks.nvim input |
 | `notify` | `vim.notify` backends (`builtin` toasts, `native` ui2, `nvim-notify`) | snacks.nvim notifier |
 | `indent` | Indent and scope guides (`builtin`, without animation, or `blink` for blink.indent) | snacks.nvim indent |
@@ -36,6 +37,7 @@ require('neat').setup({
   input = { enabled = true },
   notify = { enabled = true },  -- backend = 'builtin' by default
   indent = { enabled = true },  -- backend = 'builtin' by default
+  spell = { enabled = true },   -- z= through vim.ui.select
 })
 ```
 
@@ -182,7 +184,8 @@ default palette is gruvbox-material.
 ## select, input, notify, indent
 
 ```lua
-select = { enabled = true, trim_prompt = true, telescope = nil, format_item_override = {}, spell = true }, -- spell: z= in the picker
+select = { enabled = true, trim_prompt = true, telescope = nil, format_item_override = {} },
+spell = { enabled = true },          -- z= through vim.ui.select (any picker; Neovim's numbered list by default)
 input = { enabled = true },          -- icon, icon_pos, prompt_pos, win, expand (as in snacks' input)
 notify = {
   enabled = true,

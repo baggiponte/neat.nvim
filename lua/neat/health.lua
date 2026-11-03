@@ -4,7 +4,8 @@ local M = {}
 local health = vim.health
 
 local known = {
-  select = { enabled = true, trim_prompt = true, telescope = true, format_item_override = true, spell = true },
+  select = { enabled = true, trim_prompt = true, telescope = true, format_item_override = true },
+  spell = { enabled = true },
   input = {
     enabled = true,
     icon = true,
@@ -85,6 +86,23 @@ function M.check()
       health.ok("vim.ui.select is neat.nvim's")
     else
       health.warn("vim.ui.select was replaced after setup() by another plugin")
+    end
+  end
+
+  health.start("spell")
+  if not enabled("spell") then
+    health.info("off (set `enabled = true`)")
+  else
+    local map = vim.fn.maparg("z=", "n", false, true)
+    if map.callback == require("neat.spell").suggest then
+      health.ok("z= lists suggestions through vim.ui.select")
+    else
+      health.warn("z= is mapped by something else", "neat leaves an existing z= mapping alone")
+    end
+    if enabled("select") and vim.ui.select == require("neat.select").select then
+      health.info("vim.ui.select is neat's (telescope, or the builtin menu without it)")
+    else
+      health.info("vim.ui.select is whatever your config set (Neovim's numbered list by default)")
     end
   end
 
