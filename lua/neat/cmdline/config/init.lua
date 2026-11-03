@@ -27,8 +27,6 @@ M.ns = vim.api.nvim_create_namespace("noice")
 ---@field format? table<string, neat.cmdline.Format|false>
 
 ---@class neat.cmdline.Config.ui2
----@field enable? boolean
----@field cmdheight? integer|false
 ---@field disable_cmdline? boolean
 ---@field pager? neat.cmdline.PagerConfig|false
 
@@ -58,14 +56,9 @@ function M.defaults()
     },
     -- Coexistence with Neovim's experimental ui2 (vim._core.ui2).
     ui2 = {
-      -- Turn ui2 on (once a UI is attached) if your config did not. With
-      -- 'cmdheight' 0 its messages go to the "msg" window above the statusline.
-      enable = true,
-      -- 'cmdheight' to set: the popup does not need a cmdline row, and the
-      -- statusline shows mode, recording, showcmd and the search count.
-      -- false leaves the option alone.
-      ---@type integer|false
-      cmdheight = 0,
+      -- neat never turns ui2 on or sets 'cmdheight': both are yours to set
+      -- (see :h neat-cmdline). :checkhealth neat warns when they don't suit
+      -- the popup.
       -- When ui2 is enabled, stop it from drawing the cmdline (cmdline.nvim
       -- draws it) while ui2 keeps handling messages.
       disable_cmdline = true,
@@ -143,10 +136,6 @@ local function validate(o)
     return v == "center" or v == "box" or v == "toast" or v == "ui2"
   end, false, '"center", "box", "toast" or "ui2"')
   vim.validate("ui2", o.ui2, "table")
-  vim.validate("ui2.enable", o.ui2.enable, "boolean")
-  vim.validate("ui2.cmdheight", o.ui2.cmdheight, function(v)
-    return v == false or (type(v) == "number" and v >= 0)
-  end, false, "a number >= 0 or false")
   vim.validate("ui2.disable_cmdline", o.ui2.disable_cmdline, "boolean")
   vim.validate("messages", o.messages, "table")
   vim.validate("messages.enabled", o.messages.enabled, "boolean")

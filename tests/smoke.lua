@@ -315,7 +315,13 @@ function tests.cmdline()
       check(ok, "require('" .. mod .. "')" .. (ok and "" or ": " .. tostring(err)))
     end
   end
-  check(vim.o.cmdheight == 0, "cmdline sets 'cmdheight' to 0")
+  check(vim.o.cmdheight == 1, "cmdline leaves 'cmdheight' alone")
+  check(require("neat.cmdline.ui2").start == nil, "neat has no code that sets 'cmdheight' or enables ui2")
+  vim.cmd("checkhealth neat")
+  local report = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+  vim.cmd("bwipeout!")
+  check(report:find("'cmdheight' is 1", 1, true) ~= nil, ":checkhealth neat warns about 'cmdheight' > 0")
+  check(report:find("ui2 is not enabled", 1, true) ~= nil, ":checkhealth neat warns when ui2 is off")
   check(#health_errors() == 0, ":checkhealth neat has no errors")
 
   -- message routing, against a stand-in for ui2's private module layout

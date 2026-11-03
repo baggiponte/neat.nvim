@@ -121,42 +121,6 @@ local function patch()
   return true
 end
 
---- Set 'cmdheight' and turn ui2 on, unless the user already did.
----@param opts? {enable?: boolean, cmdheight?: integer|false}
-function M.start(opts)
-  opts = opts or {}
-  if opts.cmdheight ~= false and opts.cmdheight ~= nil and vim.o.cmdheight ~= opts.cmdheight then
-    vim.o.cmdheight = opts.cmdheight
-  end
-  if not opts.enable then
-    return
-  end
-  local function enable()
-    local ui2 = package.loaded["vim._core.ui2"]
-    if type(ui2) == "table" and type(ui2.msg) == "table" then
-      return -- enabled by the user, with their own options
-    end
-    -- with 'cmdheight' 0 the "cmd" target would expand over the statusline
-    -- for each message; the "msg" window floats above it instead
-    local ok, err = pcall(function()
-      require("vim._core.ui2").enable({ msg = { targets = vim.o.cmdheight == 0 and "msg" or "cmd" } })
-    end)
-    if not ok then
-      vim.notify("neat.nvim: could not enable ui2: " .. tostring(err), vim.log.levels.WARN)
-    end
-  end
-  if #vim.api.nvim_list_uis() > 0 then
-    enable()
-  else
-    -- ui2 only enables with a UI attached
-    vim.api.nvim_create_autocmd("UIEnter", {
-      group = vim.api.nvim_create_augroup("neat.cmdline.ui2.enable", { clear = true }),
-      once = true,
-      callback = enable,
-    })
-  end
-end
-
 ---@param opts? {disable_cmdline?: boolean}
 function M.setup(opts)
   opts = opts or {}
