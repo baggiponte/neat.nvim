@@ -90,13 +90,10 @@ function M.check()
     if backend.available() then
       health.ok("the backend is available")
     elseif name == "telescope" then
-      health.warn(
-        "telescope.nvim is not installed: vim.ui.select uses Neovim's menu",
-        {
-          "Install https://github.com/nvim-telescope/telescope.nvim",
-          "or set `select.backend` (`:h neat-select-backend`)",
-        }
-      )
+      health.warn("telescope.nvim is not installed: vim.ui.select uses Neovim's menu", {
+        "Install https://github.com/nvim-telescope/telescope.nvim",
+        "or set `select.backend` (`:h neat-select-backend`)",
+      })
     else
       health.warn("the backend is not available: vim.ui.select uses Neovim's menu")
     end
@@ -143,21 +140,24 @@ function M.check()
     health.info("off (set `enabled = true`)")
   else
     local notify = require("neat.notify")
-    local backend = notify.get_config().backend
-    health.info("backend: " .. backend)
-    if backend == "nvim-notify" then
+    local name = notify.get_config().backend
+    name = type(name) == "string" and name or "your own"
+    health.info("backend: " .. name)
+    if name == "nvim-notify" then
       need("nvim-notify", "notify", "Install https://github.com/rcarriga/nvim-notify or use another backend")
     end
-    if backend == "native" then
+    if name == "native" then
       if package.loaded["vim._core.ui2"] then
         health.ok("ui2 is loaded and shows messages")
       else
         health.info("ui2 is not loaded; messages use the classic message area")
       end
-    elseif vim.notify == notify.original() then
-      health.warn("vim.notify was replaced after setup() by another plugin")
+    end
+    local backend = notify.backend()
+    if backend and vim.notify == backend.notify then
+      health.ok("vim.notify is routed to " .. name)
     else
-      health.ok("vim.notify is routed to " .. backend)
+      health.warn("vim.notify was replaced after setup() by another plugin")
     end
   end
 

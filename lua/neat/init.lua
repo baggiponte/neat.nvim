@@ -35,7 +35,7 @@ M.modules = { "notify", "select", "input", "indent", "spell", "statusline", "cmd
 ---@field statusline? statusline.Config|neat.Enabled
 ---@field select? neat.select.Config|neat.Enabled
 ---@field input? neat.input.Config|neat.Enabled
----@field notify? ui.notify.Config|neat.Enabled
+---@field notify? neat.notify.Config|neat.Enabled
 ---@field indent? ui.indent.Config|neat.Enabled
 ---@field spell? neat.Enabled
 

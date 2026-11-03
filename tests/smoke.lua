@@ -137,7 +137,17 @@ function tests.ui()
   check(not loaded("neat.indent.guides"), "the indent engine is not loaded without a file")
   vim.notify("smoke test")
   check(loaded("neat.notify.notifier"), "the first vim.notify() loads the notifier")
-  check(vim.notify == require("neat.notify.notifier").notify, "vim.notify is the notifier after the first call")
+  check(require("neat.notify").shows_toasts(), "the builtin backend shows toasts")
+  -- a backend of your own
+  local notify_backend = {
+    toasts = false,
+    notify = function() end,
+  }
+  require("neat.notify").setup({ backend = notify_backend })
+  check(vim.notify == notify_backend.notify, "notify: vim.notify is your backend's notify()")
+  check(not require("neat.notify").shows_toasts(), "notify: your backend says it shows no toasts")
+  require("neat.notify").setup({ backend = "builtin" })
+  check(not loaded("notify"), "nvim-notify is never required by the builtin backend")
   check(vim.ui.select == require("neat.select").select, "vim.ui.select is neat's")
   check(not loaded("neat.select.backends.telescope"), "the telescope backend is not loaded at startup")
 

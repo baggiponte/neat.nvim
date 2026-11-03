@@ -92,7 +92,7 @@ function M.check()
     require("neat.cmdline.messages").is_patched()
   )
   if opts.messages.enabled and not require("neat.cmdline.messages").can_notify() then
-    health.info("messages: toasts need neat's `notify` module (builtin or nvim-notify); messages stay with ui2")
+    health.info("messages: toasts need neat's `notify` module with a backend that shows toasts; messages stay with ui2")
   end
   if opts.ui2.cmdheight ~= false and vim.o.cmdheight ~= opts.ui2.cmdheight then
     health.warn(

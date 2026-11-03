@@ -54,11 +54,8 @@ end
 --- Whether `vim.notify` shows toasts instead of echoing (which would loop back here).
 ---@return boolean
 function M.can_notify()
-  local ok, neat = pcall(require, "neat")
-  if not (ok and neat.enabled("notify")) then
-    return false
-  end
-  return require("neat.notify").get_config().backend ~= "native"
+  local notify = package.loaded["neat.notify"] ---@type table?
+  return notify ~= nil and notify.shows_toasts()
 end
 
 ---@param content? [integer, string, integer][]
