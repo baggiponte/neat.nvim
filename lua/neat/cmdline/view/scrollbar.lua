@@ -26,8 +26,8 @@ local defaults = {
   winnr = 0,
   autohide = true,
   hl_group = {
-    bar = "NoiceScrollbar",
-    thumb = "NoiceScrollbarThumb",
+    bar = "NeatScrollbar",
+    thumb = "NeatScrollbarThumb",
   },
   ---@type _.NuiBorderPadding
   padding = {

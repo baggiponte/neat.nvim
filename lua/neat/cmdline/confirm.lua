@@ -65,7 +65,7 @@ function M.show(prompt)
     marks[#marks + 1] = {
       from,
       from + #text,
-      button:find("%[") and "NoiceFormatConfirmDefault" or "NoiceFormatConfirm",
+      button:find("%[") and "NeatFormatConfirmDefault" or "NeatFormatConfirm",
     }
   end
 
@@ -123,7 +123,7 @@ function M.show(prompt)
     vim.api.nvim_win_set_config(M._win, cfg)
   else
     M._win = vim.api.nvim_open_win(M._buf, false, cfg)
-    vim.wo[M._win].winhighlight = "Normal:NoiceConfirm,FloatBorder:NoiceConfirmBorder"
+    vim.wo[M._win].winhighlight = "Normal:NeatConfirm,FloatBorder:NeatConfirmBorder"
     vim.wo[M._win].wrap = true
   end
   -- center the question lines too

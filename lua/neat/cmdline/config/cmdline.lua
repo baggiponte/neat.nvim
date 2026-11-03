@@ -22,19 +22,19 @@ function M.setup()
       local kind_cc = kind:sub(1, 1):upper() .. kind:sub(2)
 
       local hl_group_icon = "CmdlineIcon" .. kind_cc
-      Highlights.add(hl_group_icon, "NoiceCmdlineIcon")
+      Highlights.add(hl_group_icon, "NeatCmdlineIcon")
 
       local hl_group_border = "CmdlinePopupBorder" .. kind_cc
-      Highlights.add(hl_group_border, "NoiceCmdlinePopupBorder")
+      Highlights.add(hl_group_border, "NeatCmdlinePopupBorder")
 
       local hl_group_title = "CmdlinePopupTitle" .. kind_cc
-      Highlights.add(hl_group_title, "Noice" .. hl_group_border)
+      Highlights.add(hl_group_title, "Neat" .. hl_group_border)
 
       format = vim.tbl_deep_extend("force", {
         name = name,
         conceal = format.conceal ~= false,
         kind = name,
-        icon_hl_group = "Noice" .. hl_group_icon,
+        icon_hl_group = "Neat" .. hl_group_icon,
         view = Config.options.cmdline.view,
         lang = format.lang,
         opts = {
@@ -46,8 +46,8 @@ function M.setup()
           },
           win_options = {
             winhighlight = {
-              FloatBorder = "Noice" .. hl_group_border,
-              FloatTitle = "Noice" .. hl_group_title,
+              FloatBorder = "Neat" .. hl_group_border,
+              FloatTitle = "Neat" .. hl_group_title,
             },
           },
         },

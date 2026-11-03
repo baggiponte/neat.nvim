@@ -140,7 +140,7 @@ function Cmdline:format(message)
     if use_input then
       message.title = " " .. self.state.prompt:gsub("%s*:%s*$", "") .. " "
     else
-      message:append(self.state.prompt, "NoiceCmdlinePrompt")
+      message:append(self.state.prompt, "NeatCmdlinePrompt")
     end
   end
 

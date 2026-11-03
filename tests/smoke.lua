@@ -324,6 +324,14 @@ function tests.cmdline()
   vim.cmd("bwipeout!")
   check(report:find("'cmdheight' is 1", 1, true) ~= nil, ":checkhealth neat warns about 'cmdheight' > 0")
   check(report:find("ui2 is not enabled", 1, true) ~= nil, ":checkhealth neat warns when ui2 is off")
+  check(
+    vim.api.nvim_get_hl(0, { name = "NeatCmdlinePopup" }).link == "NoiceCmdlinePopup",
+    "NeatCmdlinePopup links to NoiceCmdlinePopup"
+  )
+  check(
+    vim.api.nvim_get_hl(0, { name = "NeatCmdlineIconSearch" }).link == "NoiceCmdlineIconSearch",
+    "per-format groups get a Neat name too"
+  )
   check(#health_errors() == 0, ":checkhealth neat has no errors")
 
   -- message routing, against a stand-in for ui2's private module layout

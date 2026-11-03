@@ -87,8 +87,9 @@ cmdline                                                         *neat-cmdline*
     `pager_lines`), `confirm` (`style` = "center", "box", "toast" or
     "ui2"), `ui2` (`disable_cmdline`, `pager`),
     `throttle`, `views`, `format`, `debug`. Defaults are in
-    lua/neat/cmdline/config/init.lua. Highlight groups keep noice's names
-    (`NoiceCmdlinePopup`, ...).
+    lua/neat/cmdline/config/init.lua. Highlight groups are `Neat*`
+    (`NeatCmdlinePopup`, ...); each links by default to noice's group of
+    the same name (`NoiceCmdlinePopup`, ...), so noice themes still apply.
 
 statusline                                                   *neat-statusline*
     Statusline built from sections `a`, `b`, `c`, `x`, `y`, `z`. Each takes

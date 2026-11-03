@@ -73,7 +73,7 @@ function M.float()
   })
   -- same colours as the cmdline popup
   vim.wo[win].winhighlight =
-    "Normal:NoiceCmdlinePopup,FloatBorder:NoiceCmdlinePopupBorder,FloatTitle:NoiceCmdlinePopupTitle"
+    "Normal:NeatCmdlinePopup,FloatBorder:NeatCmdlinePopupBorder,FloatTitle:NeatCmdlinePopupTitle"
 end
 
 local function patch()

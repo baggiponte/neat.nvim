@@ -48,7 +48,7 @@ M.defaults = {
     },
     win_options = {
       winhighlight = {
-        Normal = "NoiceCmdline",
+        Normal = "NeatCmdline",
         IncSearch = "",
         CurSearch = "",
         Search = "",
@@ -76,9 +76,9 @@ M.defaults = {
     },
     win_options = {
       winhighlight = {
-        Normal = "NoiceCmdlinePopup",
-        FloatTitle = "NoiceCmdlinePopupTitle",
-        FloatBorder = "NoiceCmdlinePopupBorder",
+        Normal = "NeatCmdlinePopup",
+        FloatTitle = "NeatCmdlinePopupTitle",
+        FloatBorder = "NeatCmdlinePopupBorder",
         IncSearch = "",
         CurSearch = "",
         Search = "",

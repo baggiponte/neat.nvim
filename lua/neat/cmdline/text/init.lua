@@ -44,7 +44,7 @@ end
 ---@return NoiceText
 function NoiceText.cursor(col)
   return NoiceText(" ", {
-    hl_group = "NoiceCursor",
+    hl_group = "NeatCursor",
     col = col,
     relative = true,
   })

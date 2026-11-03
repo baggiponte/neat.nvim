@@ -1,6 +1,7 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
--- Changes: only the cmdline groups are left. Group names keep the `Noice`
--- prefix so colorschemes that theme noice keep theming the popup.
+-- Changes: only the cmdline groups are left. neat draws with `Neat*` groups;
+-- each links (by default) to the matching `Noice*` group, which links to a
+-- builtin group, so colorschemes that theme noice keep theming the popup.
 local M = {}
 
 M.defaults = {
@@ -21,7 +22,7 @@ M.defaults = {
   ScrollbarThumb = "PmenuThumb", -- Scrollbar thumb
 }
 
---- Register `Noice<hl_group>` as a default link to `link`.
+--- Register `Neat<hl_group>` (and its `Noice<hl_group>` fallback) as a default link to `link`.
 ---@param hl_group string
 ---@param link string
 function M.add(hl_group, link)
@@ -52,6 +53,7 @@ function M.setup()
 
       vim.api.nvim_set_hl(0, "Noice" .. hl, opts --[[@as vim.api.keyset.highlight]])
     end
+    vim.api.nvim_set_hl(0, "Neat" .. hl, { link = "Noice" .. hl, default = true })
   end
 end
 

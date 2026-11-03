@@ -165,9 +165,11 @@ cmdline = {
 }
 ```
 
-Highlight groups keep noice's names (`NoiceCmdlinePopup`,
-`NoiceCmdlinePopupBorder`, `NoiceCmdlineIcon`, ...), and the popup buffer keeps
-the `noice` filetype, so colorschemes that theme noice keep working.
+The popup draws with `Neat*` highlight groups (`NeatCmdlinePopup`,
+`NeatCmdlinePopupBorder`, `NeatCmdlineIcon`, ...). Each one links by default to
+noice's group of the same name (`NoiceCmdlinePopup`, ...), so colorschemes that
+theme noice keep working, and you can override either. The popup buffer keeps
+the `noice` filetype, so plugins that skip noice's windows skip neat's too.
 
 ## statusline
 
