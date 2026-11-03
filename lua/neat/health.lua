@@ -6,6 +6,7 @@ local health = vim.health
 local known = {
   select = { enabled = true, trim_prompt = true, telescope = true, format_item_override = true },
   spell = { enabled = true },
+  pack = { enabled = true },
   input = {
     enabled = true,
     icon = true,
@@ -104,6 +105,15 @@ function M.check()
     else
       health.info("vim.ui.select is whatever your config set (Neovim's numbered list by default)")
     end
+  end
+
+  health.start("pack")
+  if not enabled("pack") then
+    health.info("off (set `enabled = true`)")
+  elseif require("neat.pack").is_setup() then
+    health.ok("vim.pack's review buffer says `:w` applies, and updates remind you to `:restart`")
+  else
+    health.warn("the pack autocommands are gone", "Something cleared the `neat.pack` augroup")
   end
 
   health.start("input")

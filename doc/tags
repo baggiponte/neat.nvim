@@ -13,6 +13,7 @@ neat-indent	neat.txt	/*neat-indent*
 neat-input	neat.txt	/*neat-input*
 neat-modules	neat.txt	/*neat-modules*
 neat-notify	neat.txt	/*neat-notify*
+neat-pack	neat.txt	/*neat-pack*
 neat-rename	neat.txt	/*neat-rename*
 neat-select	neat.txt	/*neat-select*
 neat-setup	neat.txt	/*neat-setup*

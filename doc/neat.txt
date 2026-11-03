@@ -111,6 +111,13 @@ spell                                                             *neat-spell*
     count (`3z=`) still picks directly, and an existing `z=` mapping is
     left alone. No options besides `enabled`.
 
+pack                                                               *neat-pack*
+    Hints in the |vim.pack.update()| flow. Its review buffer only applies
+    the updates on |:write| (|:quit| cancels), which neat shows in the
+    buffer's 'winbar'. After an update a notification says that |:restart|
+    loads the new code, since the running Neovim keeps the old one. No
+    options besides `enabled`.
+
 input                                                             *neat-input*
     |vim.ui.input()| in a floating window with history and completion.
     Options: `icon`, `icon_hl`, `icon_pos`, `prompt_pos`, `win`, `expand`.

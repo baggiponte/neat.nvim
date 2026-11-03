@@ -43,7 +43,15 @@ function tests.off()
   check(vim.fn.exists(":Neat") == 2, ":Neat exists")
   check(not loaded("neat"), "nothing is required without vim.g.neat")
   require("neat").setup({})
-  local modules = { "neat.statusline", "neat.notify", "neat.select", "neat.indent", "neat.cmdline", "neat.spell" }
+  local modules = {
+    "neat.statusline",
+    "neat.notify",
+    "neat.select",
+    "neat.indent",
+    "neat.cmdline",
+    "neat.spell",
+    "neat.pack",
+  }
   for _, mod in ipairs(modules) do
     check(not loaded(mod), mod .. " is not loaded when off")
   end
@@ -157,6 +165,27 @@ function tests.ui()
   check(got ~= nil and vim.api.nvim_get_current_line() == got.items[1] .. " cat", "z= replaces the word with the pick")
   vim.ui.select = select
   vim.cmd("bwipeout!")
+  -- pack: the review buffer says how to apply, and an update says to restart
+  vim.cmd("enew")
+  vim.bo.filetype = "nvim-pack"
+  check(vim.wo.winbar:find(":w", 1, true) ~= nil, "pack: the review buffer's winbar says :w applies")
+  vim.cmd("bwipeout!")
+  local pack_notify, pack_msgs = vim.notify, {}
+  vim.notify = function(msg)
+    pack_msgs[#pack_msgs + 1] = msg
+  end
+  local Pack = require("neat.pack")
+  Pack.on_changed({ data = { kind = "update", spec = { name = "a" } } })
+  Pack.on_changed({ data = { kind = "update", spec = { name = "b" } } })
+  Pack.on_changed({ data = { kind = "install", spec = { name = "c" } } })
+  vim.wait(1000, function()
+    return #pack_msgs > 0
+  end)
+  vim.notify = pack_notify
+  check(
+    #pack_msgs == 1 and pack_msgs[1] == Pack.restart_message({ "a", "b" }),
+    "pack: one :restart reminder per update"
+  )
   vim.cmd("edit tests/smoke.lua")
   check(loaded("neat.indent.guides"), "opening a file loads the indent engine")
   vim.cmd("Neat indent off")
@@ -277,6 +306,7 @@ if name == "ui" then
     notify = { enabled = true, backend = "builtin" },
     indent = { enabled = true, backend = "builtin" },
     spell = { enabled = true },
+    pack = { enabled = true },
   }
 end
 
