@@ -1,9 +1,11 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: module paths renamed from noice to cmdline.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Util = require("neat.cmdline.util")
-local _ = require("nui.utils")._
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
+---@module "nui.utils"
+local _ = lazy("nui.utils")._
 
 local M = {}
 

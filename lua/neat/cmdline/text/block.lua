@@ -1,10 +1,13 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: module paths renamed from noice to cmdline.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Highlight = require("neat.cmdline.text.highlight")
-local NuiLine = require("nui.line")
-local Object = require("nui.object")
+---@module "neat.cmdline.text.highlight"
+local Highlight = lazy("neat.cmdline.text.highlight")
+---@module "nui.line"
+local NuiLine = lazy("nui.line")
+---@module "nui.object"
+local Object = lazy("nui.object")
 
 ---@alias NoiceChunk { [0]: integer, [1]: string, [2]?: integer}
 ---@alias NoiceContent string|NoiceChunk|NuiLine|NuiText|NoiceBlock

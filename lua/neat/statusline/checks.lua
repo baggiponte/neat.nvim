@@ -3,22 +3,6 @@ local M = {}
 
 local health = vim.health
 
----@param user table
----@param defaults table
----@param prefix string
----@param out string[]
-local function unknown_keys(user, defaults, prefix, out)
-  for k, v in pairs(user) do
-    local path = prefix .. tostring(k)
-    if defaults[k] == nil then
-      out[#out + 1] = path
-    elseif type(v) == 'table' and type(defaults[k]) == 'table' and not vim.islist(v) then
-      unknown_keys(v, defaults[k], path .. '.', out)
-    end
-  end
-  return out
-end
-
 function M.check()
   health.start('statusline')
   local sl = require('neat.statusline')
@@ -48,7 +32,7 @@ function M.check()
   if type(user.colors) == 'table' then
     user.colors.modes = nil
   end
-  local unknown = unknown_keys(user, defaults, '', {})
+  local unknown = require('neat.health').unknown_keys(user, defaults)
   if #unknown == 0 then
     health.ok('No unknown options')
   else

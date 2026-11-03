@@ -37,7 +37,7 @@ local M = {}
 ---@class neat.select.Config
 ---@field backend? neat.select.BackendName|neat.select.Backend
 ---@field trim_prompt? boolean drop a trailing ":" from the prompt
----@field telescope? table options for the telescope backend (picker opts; the dropdown theme when nil)
+---@field telescope? table options for the telescope backend: picker opts, or {} for the dropdown theme
 ---@field builtin? table options for the builtin backend (none yet)
 ---@field format_item_override? table<string, fun(item: any): string> kind -> format_item
 
@@ -45,7 +45,7 @@ local M = {}
 M.defaults = {
   backend = "telescope",
   trim_prompt = true,
-  telescope = nil,
+  telescope = {},
   builtin = {},
   format_item_override = {},
 }
@@ -191,7 +191,7 @@ local function validate(c)
     return BACKENDS[v] ~= nil or (type(v) == "table" and vim.is_callable(v.available) and vim.is_callable(v.select))
   end, false, '"telescope", "builtin" or a table with available() and select()')
   vim.validate("select.trim_prompt", c.trim_prompt, "boolean")
-  vim.validate("select.telescope", c.telescope, "table", true)
+  vim.validate("select.telescope", c.telescope, "table")
   vim.validate("select.builtin", c.builtin, "table")
   vim.validate("select.format_item_override", c.format_item_override, "table")
 end

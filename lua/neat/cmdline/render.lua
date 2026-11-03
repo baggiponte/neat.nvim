@@ -2,11 +2,14 @@
 -- Changes: replaces noice's message manager, router and filters. The cmdline
 -- is the only thing left to route, so each cmdline format maps straight to
 -- its own view instead of going through route filters.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
-local Util = require("neat.cmdline.util")
-local View = require("neat.cmdline.view")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
+---@module "neat.cmdline.view"
+local View = lazy("neat.cmdline.view")
 
 local M = {}
 

@@ -1,12 +1,16 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: attaches to `ext_cmdline` only; messages and the popupmenu are left
 -- to Neovim (ui2 and the completion plugin). Updates go through cmdline.render.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Cmdline = require("neat.cmdline.ui.cmdline")
-local Config = require("neat.cmdline.config")
-local Render = require("neat.cmdline.render")
-local Util = require("neat.cmdline.util")
+---@module "neat.cmdline.ui.cmdline"
+local Cmdline = lazy("neat.cmdline.ui.cmdline")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.render"
+local Render = lazy("neat.cmdline.render")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
 
 local M = {}
 M._attached = false

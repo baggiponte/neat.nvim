@@ -39,14 +39,6 @@ M.modules = { "notify", "select", "input", "indent", "spell", "statusline", "cmd
 ---@field indent? ui.indent.Config|neat.Enabled
 ---@field spell? neat.Enabled
 
----@class neat.input.Config
----@field icon? string
----@field icon_hl? string
----@field icon_pos? "left"|"title"|false
----@field prompt_pos? "title"|"left"|false
----@field win? table window options, see neat.win
----@field expand? boolean grow the window with the text
-
 --- True once setup() ran.
 M.did_setup = false
 
@@ -54,46 +46,11 @@ M.did_setup = false
 ---@type neat.Config
 M.options = {}
 
---- `vim.ui.input` before setup(), if setup() replaced it.
-local original_input ---@type function?
-
-local function enable_input()
-  original_input = original_input or vim.ui.input
-  local input = package.loaded["neat.input"]
-  if input then
-    input.enable()
-    return
-  end
-  -- Stub until the first call: neat.input pulls in neat.win (about 800 lines).
-  vim.ui.input = function(...)
-    vim.ui.input = original_input -- neat.input captures this as the builtin to fall back to
-    local mod = require("neat.input")
-    mod.enable()
-    return mod.input(...)
-  end
-end
-
---- `vim.ui.input` that setup() replaced, if any.
-function M.original_input()
-  return original_input
-end
-
 ---@param name neat.Module
 ---@return boolean
 function M.enabled(name)
   local o = M.options[name]
   return type(o) == "table" and o.enabled == true
-end
-
----@param name neat.Module
----@param opts table
-local function start(name, opts)
-  if name == "input" then
-    require("neat.util").config.input = opts
-    enable_input()
-  else
-    require("neat." .. name).setup(opts)
-  end
 end
 
 --- Configure neat.nvim and start the modules that set `enabled = true`.
@@ -124,7 +81,7 @@ function M.setup(opts)
     if M.enabled(name) then
       local mod_opts = vim.deepcopy(opts[name])
       mod_opts.enabled = nil
-      start(name, mod_opts)
+      require("neat." .. name).setup(mod_opts)
     end
   end
 end

@@ -3,28 +3,31 @@ local M = {}
 
 local health = vim.health
 
-local known = {
-  select = {
-    enabled = true,
-    backend = true,
-    trim_prompt = true,
-    telescope = true,
-    builtin = true,
-    format_item_override = true,
-  },
-  spell = { enabled = true, keymap = true },
-  input = {
-    enabled = true,
-    icon = true,
-    icon_hl = true,
-    icon_pos = true,
-    prompt_pos = true,
-    win = true,
-    expand = true,
-  },
-  notify = { enabled = true, backend = true, builtin = true, nvim_notify = true },
-  indent = { enabled = true, backend = true, builtin = true, blink = true },
-}
+--- Keys in `user` that `defaults` does not have, as dotted paths. Tables
+--- that are lists in `user` are not looked into.
+---@param user table
+---@param defaults table
+---@param prefix? string
+---@param out? string[]
+---@return string[]
+function M.unknown_keys(user, defaults, prefix, out)
+  prefix, out = prefix or "", out or {}
+  for k, v in pairs(user) do
+    local path = prefix .. tostring(k)
+    if defaults[k] == nil then
+      out[#out + 1] = path
+    elseif type(v) == "table" and type(defaults[k]) == "table" and not vim.islist(v) then
+      M.unknown_keys(v, defaults[k], path .. ".", out)
+    end
+  end
+  return out
+end
+
+--- Modules whose options are checked here, against their `defaults`, one
+--- level deep (backend option tables are open-ended). cmdline and statusline
+--- check their own in neat.cmdline.checks and neat.statusline.checks.
+---@type neat.Module[]
+local SIMPLE = { "select", "spell", "input", "notify", "indent" }
 
 ---@param name string
 ---@param mod string
@@ -52,14 +55,15 @@ function M.check()
   end
 
   local opts = neat.options or {}
-  local unknown = {}
+  local unknown = {} ---@type string[]
   for k, v in pairs(opts) do
     if not vim.tbl_contains(neat.modules, k) then
       unknown[#unknown + 1] = k
-    elseif known[k] and type(v) == "table" then
-      for kk in pairs(v) do
-        if not known[k][kk] then
-          unknown[#unknown + 1] = k .. "." .. kk
+    elseif vim.tbl_contains(SIMPLE, k) and type(v) == "table" then
+      local known = vim.tbl_extend("force", { enabled = true }, require("neat." .. k).defaults)
+      for key in pairs(v) do
+        if known[key] == nil then
+          unknown[#unknown + 1] = k .. "." .. key
         end
       end
     end
@@ -127,11 +131,12 @@ function M.check()
   if not enabled("input") then
     health.info("off (set `enabled = true`)")
   else
-    local input = package.loaded["neat.input"]
-    if input and vim.ui.input == input.input then
-      health.ok("vim.ui.input is neat.nvim's")
-    elseif not input and vim.ui.input ~= neat.original_input() then
-      health.ok("vim.ui.input is neat.nvim's (loads on first use)")
+    local input = require("neat.input")
+    if vim.ui.input == input.input then
+      health.ok(
+        "vim.ui.input is neat.nvim's"
+          .. (package.loaded["neat.input.window"] and "" or " (the window loads on first use)")
+      )
     else
       health.warn("vim.ui.input was replaced after setup() by another plugin")
     end

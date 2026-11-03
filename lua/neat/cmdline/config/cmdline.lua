@@ -1,10 +1,12 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: formats are looked up directly by cmdline.render instead of
 -- being turned into routes.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
-local Highlights = require("neat.cmdline.config.highlights")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.config.highlights"
+local Highlights = lazy("neat.cmdline.config.highlights")
 
 local M = {}
 

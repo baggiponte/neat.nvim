@@ -76,7 +76,7 @@ local custom_kind = {
 ---@param items any[]
 ---@param opts neat.select.Opts
 ---@param on_choice neat.select.OnChoice
----@param picker_opts? table telescope picker opts (`select.telescope`); the dropdown theme when nil
+---@param picker_opts? table telescope picker opts (`select.telescope`); the dropdown theme when empty
 local function select(items, opts, on_choice, picker_opts)
   local themes = require("telescope.themes")
   local actions = require("telescope.actions")
@@ -136,7 +136,8 @@ local function select(items, opts, on_choice, picker_opts)
   end
 
   -- the caller of vim.ui.select() can pass telescope opts as `opts.telescope`
-  pickers.new(opts.telescope or picker_opts or themes.get_dropdown(), picker):find()
+  local theme = picker_opts and next(picker_opts) and picker_opts or themes.get_dropdown()
+  pickers.new(opts.telescope or theme, picker):find()
 end
 
 ---@type neat.select.Backend

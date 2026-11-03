@@ -1,15 +1,18 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: dropped helpers only the removed modules used; no nvim-notify.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
 
 local M = {}
 
 M.islist = vim.islist
 
-M.call = require("neat.cmdline.util.call")
-M.nui = require("neat.cmdline.util.nui")
+---@module "neat.cmdline.util.call"
+M.call = lazy("neat.cmdline.util.call")
+---@module "neat.cmdline.util.nui"
+M.nui = lazy("neat.cmdline.util.nui")
 
 ---@param fn fun():any
 function M.ignore_events(fn)

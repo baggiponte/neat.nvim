@@ -1,12 +1,17 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: no debug formatter.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
-local FormatConfig = require("neat.cmdline.config.format")
-local Formatters = require("neat.cmdline.text.format.formatters")
-local NuiText = require("nui.text")
-local Util = require("neat.cmdline.util")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.config.format"
+local FormatConfig = lazy("neat.cmdline.config.format")
+---@module "neat.cmdline.text.format.formatters"
+local Formatters = lazy("neat.cmdline.text.format.formatters")
+---@module "nui.text"
+local NuiText = lazy("nui.text")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
 
 local M = {}
 

@@ -1,13 +1,19 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: module paths renamed from noice to cmdline.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
-local ConfigViews = require("neat.cmdline.config.views")
-local Format = require("neat.cmdline.text.format")
-local Message = require("neat.cmdline.message")
-local Object = require("nui.object")
-local Util = require("neat.cmdline.util")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.config.views"
+local ConfigViews = lazy("neat.cmdline.config.views")
+---@module "neat.cmdline.text.format"
+local Format = lazy("neat.cmdline.text.format")
+---@module "neat.cmdline.message"
+local Message = lazy("neat.cmdline.message")
+---@module "nui.object"
+local Object = lazy("nui.object")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
 
 ---@class NoiceViewBaseOptions
 ---@field buf_options? table<string,any>

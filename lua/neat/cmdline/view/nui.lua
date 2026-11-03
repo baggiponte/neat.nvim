@@ -1,10 +1,13 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: module paths renamed from noice to cmdline.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Scrollbar = require("neat.cmdline.view.scrollbar")
-local Util = require("neat.cmdline.util")
-local View = require("neat.cmdline.view")
+---@module "neat.cmdline.view.scrollbar"
+local Scrollbar = lazy("neat.cmdline.view.scrollbar")
+---@module "neat.cmdline.util"
+local Util = lazy("neat.cmdline.util")
+---@module "neat.cmdline.view"
+local View = lazy("neat.cmdline.view")
 
 local uv = vim.uv
 

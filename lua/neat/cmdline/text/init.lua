@@ -1,10 +1,13 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: module paths renamed from noice to cmdline.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local NuiText = require("nui.text")
-local Syntax = require("neat.cmdline.text.syntax")
-local Treesitter = require("neat.cmdline.text.treesitter")
+---@module "nui.text"
+local NuiText = lazy("nui.text")
+---@module "neat.cmdline.text.syntax"
+local Syntax = lazy("neat.cmdline.text.syntax")
+---@module "neat.cmdline.text.treesitter"
+local Treesitter = lazy("neat.cmdline.text.treesitter")
 
 ---@class NoiceExtmark
 ---@field col? number

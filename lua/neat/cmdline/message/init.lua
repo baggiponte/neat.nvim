@@ -1,8 +1,9 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: no message filters.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Block = require("neat.cmdline.text.block")
+---@module "neat.cmdline.text.block"
+local Block = lazy("neat.cmdline.text.block")
 
 local _id = 0
 

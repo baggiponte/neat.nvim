@@ -1,13 +1,18 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: renders through cmdline.render instead of the message manager;
 -- confirm() prompts go to cmdline.confirm; no pre-0.11 cursor and redraw hacks.
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
-local Config = require("neat.cmdline.config")
-local Message = require("neat.cmdline.message")
-local NoiceText = require("neat.cmdline.text")
-local Object = require("nui.object")
-local Render = require("neat.cmdline.render")
+---@module "neat.cmdline.config"
+local Config = lazy("neat.cmdline.config")
+---@module "neat.cmdline.message"
+local Message = lazy("neat.cmdline.message")
+---@module "neat.cmdline.text"
+local NoiceText = lazy("neat.cmdline.text")
+---@module "nui.object"
+local Object = lazy("nui.object")
+---@module "neat.cmdline.render"
+local Render = lazy("neat.cmdline.render")
 
 local M = {}
 M.message = Message("cmdline", nil)

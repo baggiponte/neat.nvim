@@ -3,7 +3,7 @@
 -- LSP, routes, commands, redirect, presets or log file); added `ui2`,
 -- validation and the user-facing `cmdline.Opts` type.
 ---@diagnostic disable: missing-fields
-local require = require("neat.cmdline.util.lazy")
+local lazy = require("neat.cmdline.util.lazy")
 
 local M = {}
 
