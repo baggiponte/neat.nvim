@@ -43,12 +43,12 @@ function M.setup(opts)
   end
   opts = resolve(opts)
 
-  -- 'cmdheight' and ui2 right away, so the screen does not change under you
-  -- when the popup loads after VimEnter
+  -- 'cmdheight' and ui2 right away (only when asked to), so the screen does
+  -- not change under you when the popup loads after VimEnter
   local ui2 = type(opts.ui2) == "table" and opts.ui2 or {}
   require("neat.cmdline.ui2").start({
-    enable = ui2.enable ~= false,
-    cmdheight = ui2.cmdheight == nil and 0 or ui2.cmdheight,
+    enable = ui2.enable == true,
+    cmdheight = ui2.cmdheight == nil and false or ui2.cmdheight,
   })
 
   local function load()

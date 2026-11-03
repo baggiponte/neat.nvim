@@ -69,10 +69,14 @@ with the first file buffer, the cmdline popup after |VimEnter|.
 4. MODULES                                                      *neat-modules*
 
 cmdline                                                         *neat-cmdline*
-    Centred command-line popup on top of ui2 (`vim._core.ui2`). neat turns
-    ui2 on if your config did not (`ui2.enable`) and sets 'cmdheight' to 0
-    (`ui2.cmdheight`, false leaves it), so nothing sits under the
-    statusline. Messages are routed by |ui-messages| kind
+    Centred command-line popup on top of ui2 (`vim._core.ui2`). ui2 and
+    'cmdheight' are left to your config; set `ui2.enable = true` to have
+    neat turn ui2 on, and `ui2.cmdheight = 0` to have it set 'cmdheight'.
+    The popup needs no cmdline row, so 'cmdheight' 0 with ui2's "msg"
+    target suits it: >lua
+        vim.o.cmdheight = 0
+        require('vim._core.ui2').enable({ msg = { targets = 'msg' } })
+<   Messages are routed by |ui-messages| kind
     (`messages.routes`): errors, warnings and short `:echo`/`print()`
     output become |vim.notify()| toasts (with neat's `notify` module),
     output longer than `messages.pager_lines` and `:!cmd` output open

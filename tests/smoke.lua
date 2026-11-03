@@ -315,7 +315,9 @@ function tests.cmdline()
       check(ok, "require('" .. mod .. "')" .. (ok and "" or ": " .. tostring(err)))
     end
   end
-  check(vim.o.cmdheight == 0, "cmdline sets 'cmdheight' to 0")
+  check(vim.o.cmdheight == 1, "cmdline leaves 'cmdheight' alone by default")
+  require("neat.cmdline.ui2").start({ cmdheight = 0 })
+  check(vim.o.cmdheight == 0, "ui2.cmdheight = 0 sets 'cmdheight'")
   check(#health_errors() == 0, ":checkhealth neat has no errors")
 
   -- message routing, against a stand-in for ui2's private module layout

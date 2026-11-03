@@ -75,10 +75,19 @@ ui2 patch applied.
 
 ## cmdline
 
-The popup sits on top of Neovim's built-in ui2 (`vim._core.ui2`). neat turns
-ui2 on if your config did not (`ui2 = { enable = false }` to skip that) and
-sets `'cmdheight'` to 0 (`ui2 = { cmdheight = false }` leaves it), so no empty
-row is left under the statusline. Completion stays with your completion plugin.
+The popup sits on top of Neovim's built-in ui2 (`vim._core.ui2`). ui2 and
+`'cmdheight'` stay yours to set: neat does not touch either unless you ask it
+to with `ui2 = { enable = true, cmdheight = 0 }`. The popup needs no cmdline
+row, so this is the setup it is made for:
+
+```lua
+vim.o.cmdheight = 0
+-- with 'cmdheight' 0, ui2's "msg" window floats above the statusline
+require('vim._core.ui2').enable({ msg = { targets = 'msg' } })
+```
+
+`:checkhealth neat` says when ui2 is off or `'cmdheight'` is above 0.
+Completion stays with your completion plugin.
 
 Messages are routed by kind, like noice does it (`lua/neat/cmdline/messages.lua`):
 
@@ -146,8 +155,8 @@ cmdline = {
   },
   confirm = { style = 'center', title = ' Confirm ' }, -- 'center' | 'box' | 'toast' | 'ui2'
   ui2 = {
-    enable = true,     -- turn ui2 on if your config did not
-    cmdheight = 0,     -- or false to leave 'cmdheight' alone
+    enable = false,    -- true: turn ui2 on if your config did not
+    cmdheight = false, -- a number: set 'cmdheight' to it
     disable_cmdline = true,
     pager = { width = 0.8, height = 0.6, border = 'rounded', title = ' Messages ' }, -- or false
   },

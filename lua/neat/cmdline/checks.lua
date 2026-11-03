@@ -80,6 +80,13 @@ function M.check()
   if opts.messages.enabled and not require("neat.cmdline.messages").can_notify() then
     health.info("messages: toasts need neat's `notify` module with a backend that shows toasts; messages stay with ui2")
   end
+  if opts.ui2.cmdheight == false and vim.o.cmdheight > 0 then
+    health.info(
+      ("'cmdheight' is %d; the popup does not need a cmdline row, so vim.o.cmdheight = 0 in your config suits it"):format(
+        vim.o.cmdheight
+      )
+    )
+  end
   if opts.ui2.cmdheight ~= false and vim.o.cmdheight ~= opts.ui2.cmdheight then
     health.warn(
       ("'cmdheight' is %d, neat set %d: something changed it later"):format(vim.o.cmdheight, opts.ui2.cmdheight)

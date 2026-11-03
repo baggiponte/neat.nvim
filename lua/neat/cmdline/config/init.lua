@@ -58,14 +58,15 @@ function M.defaults()
     },
     -- Coexistence with Neovim's experimental ui2 (vim._core.ui2).
     ui2 = {
-      -- Turn ui2 on (once a UI is attached) if your config did not. With
-      -- 'cmdheight' 0 its messages go to the "msg" window above the statusline.
-      enable = true,
-      -- 'cmdheight' to set: the popup does not need a cmdline row, and the
-      -- statusline shows mode, recording, showcmd and the search count.
-      -- false leaves the option alone.
+      -- Turn ui2 on (once a UI is attached) if your config did not. Off by
+      -- default: ui2 is an experimental core feature, so enable it yourself
+      -- with require("vim._core.ui2").enable({ msg = { targets = "msg" } }).
+      enable = false,
+      -- 'cmdheight' to set. false (the default) leaves the option to your
+      -- config; the popup does not need a cmdline row, so 0 suits it, and the
+      -- statusline then shows mode, recording, showcmd and the search count.
       ---@type integer|false
-      cmdheight = 0,
+      cmdheight = false,
       -- When ui2 is enabled, stop it from drawing the cmdline (cmdline.nvim
       -- draws it) while ui2 keeps handling messages.
       disable_cmdline = true,
