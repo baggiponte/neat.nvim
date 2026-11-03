@@ -109,6 +109,43 @@ function tests.statusline()
   check(loads == 1, "nvim-web-devicons is required once, after the draw")
   check(sl.render():find("@icon@", 1, true) ~= nil, "the file icon shows once devicons is loaded")
   vim.cmd("bwipeout!")
+
+  -- providers of your own: icons and git status
+  local status = { head = "feature", added = 2 } ---@type neat.statusline.GitStatus
+  sl.setup({
+    providers = {
+      icons = {
+        load = function()
+          return true
+        end,
+        get = function(_, ft)
+          return "<" .. ft .. ">", nil
+        end,
+      },
+      git = {
+        status = function()
+          return status
+        end,
+        events = { { event = "User", pattern = "SmokeGit" } },
+      },
+    },
+  })
+  vim.cmd("edit tests/smoke.lua")
+  sl.render()
+  vim.wait(500, function()
+    return sl.render():find("<lua>", 1, true) ~= nil
+  end)
+  check(sl.render():find("<lua>", 1, true) ~= nil, "providers.icons: your provider's icon shows")
+  check(sl.render():find("feature", 1, true) ~= nil, "providers.git: your provider's branch shows")
+  check(sl.render():find("+2", 1, true) ~= nil, "providers.git: your provider's diff shows")
+  status = { head = "other" }
+  vim.api.nvim_exec_autocmds("User", { pattern = "SmokeGit" })
+  check(sl.render():find("other", 1, true) ~= nil, "providers.git: its events drop the cached status")
+  check(not pcall(sl.setup, { providers = { icons = "nope" } }), "providers: an unknown name is rejected")
+  sl.setup({ providers = { icons = false, git = false } })
+  check(sl.render():find("<lua>", 1, true) == nil, "providers.icons = false: no icon")
+  vim.cmd("bwipeout!")
+  sl.setup({})
   vim.bo.filetype = "neo-tree"
   check(not sl.render():find(vim.fn.fnamemodify(vim.fn.getcwd(), ":~"), 1, true), "the neo-tree statusline is empty")
   vim.bo.filetype = ""

@@ -62,16 +62,27 @@ function M.check()
     health.info("'termguicolors' is off: using 256-colour approximations of the palette")
   end
 
-  if pcall(require, 'gitsigns') then
-    health.ok('gitsigns.nvim is installed: branch and diff come from it')
-  else
-    health.info('gitsigns.nvim is not installed: the branch is read from .git/HEAD and diff counts are empty')
+  local providers = sl.config.providers
+  local function name_of(p)
+    return type(p) == 'string' and p or (p == false and 'none' or 'your own')
   end
-
-  if pcall(require, 'nvim-web-devicons') then
-    health.ok('nvim-web-devicons is installed')
-  else
-    health.info('nvim-web-devicons is not installed: the fileicon component is empty')
+  health.info(('providers: icons = %s, git = %s'):format(name_of(providers.icons), name_of(providers.git)))
+  if providers.icons == 'devicons' then
+    if pcall(require, 'nvim-web-devicons') then
+      health.ok('nvim-web-devicons is installed')
+    else
+      health.warn('nvim-web-devicons is not installed: the fileicon component is empty', {
+        'Install https://github.com/nvim-tree/nvim-web-devicons',
+        'or set `providers.icons` (`:h neat-statusline-providers`)',
+      })
+    end
+  end
+  if providers.git == 'gitsigns' then
+    if pcall(require, 'gitsigns') then
+      health.ok('gitsigns.nvim is installed: branch and diff come from it')
+    else
+      health.info('gitsigns.nvim is not installed: the branch is read from .git/HEAD and diff counts are empty')
+    end
   end
 end
 

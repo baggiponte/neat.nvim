@@ -165,11 +165,14 @@ local function autocmds()
     redraw()
   end)
 
-  au('User', function(args)
-    local buf = args.data and args.data.buffer
-    cache.invalidate_git(buf)
-    redraw()
-  end, { pattern = { 'GitSignsUpdate', 'GitSignsChanged' } })
+  local git = cache.git_provider()
+  for _, spec in ipairs(git and git.events or {}) do
+    au(spec.event, function(args)
+      local buf = type(args.data) == 'table' and args.data.buffer or nil
+      cache.invalidate_git(type(buf) == 'number' and buf or nil)
+      redraw()
+    end, { pattern = spec.pattern })
+  end
 
   au({ 'FocusGained', 'ShellCmdPost', 'TermLeave' }, function()
     cache.invalidate_git(nil, true)
@@ -242,6 +245,7 @@ local function validate(c)
   vim.validate('sections', c.sections, 'table')
   vim.validate('inactive_sections', c.inactive_sections, 'table')
   vim.validate('extensions', c.extensions, 'table')
+  require('neat.statusline.providers').validate(c.providers)
 end
 
 --- Configure and draw the statusline.
@@ -256,6 +260,13 @@ function M.setup(opts)
   end
   if opts.inactive_sections then
     cfg.inactive_sections = opts.inactive_sections
+  end
+  -- a provider table of your own is kept as given, not merged into a copy
+  for _, kind in ipairs({ 'icons', 'git' }) do
+    local p = type(opts.providers) == 'table' and opts.providers[kind]
+    if type(p) == 'table' then
+      cfg.providers[kind] = p
+    end
   end
   validate(cfg)
   M.did_setup = true

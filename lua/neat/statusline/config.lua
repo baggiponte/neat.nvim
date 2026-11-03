@@ -24,6 +24,7 @@
 ---@field palette? table<string, string> name -> hex colour
 ---@field colors? {modes?: table<string, statusline.Color>, b?: statusline.Color, c?: statusline.Color, x?: statusline.Color, y?: statusline.Color, z?: statusline.Color, inactive?: statusline.Color}
 ---@field icons? {mode?: string, branch?: string, lsp?: string, diff?: {added?: string, changed?: string, removed?: string}, diagnostics?: {error?: string, warn?: string, info?: string, hint?: string}}
+---@field providers? neat.statusline.Providers where file icons and git status come from
 ---@field lsp_scope? "all"|"buffer"
 ---@field diagnostics_update_in_insert? boolean
 ---@field sections? statusline.Sections replaces the default sections one by one
@@ -78,6 +79,13 @@ M.defaults = {
     lsp = '\u{f085}',
     diff = { added = '+', changed = '~', removed = '-' },
     diagnostics = { error = '󰅚 ', warn = '󰀪 ', info = '󰋽 ', hint = '󰌶 ' },
+  },
+
+  -- Adapters for the plugins the statusline reads (`:h neat-statusline-providers`):
+  -- a provider name, a table of your own, or false for none.
+  providers = {
+    icons = 'devicons', -- nvim-web-devicons, required after the first draw
+    git = 'gitsigns', -- gitsigns' buffer variables; the branch falls back to .git/HEAD
   },
 
   -- 'all': every running client (what the lualine widget did); 'buffer': only
