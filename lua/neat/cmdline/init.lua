@@ -1,6 +1,7 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
--- Changes: only the cmdline popup is left; no notify source, LSP, redirect or
--- message routing. Started by require("neat").setup({ cmdline = { enabled = true } });
+-- Changes: only the cmdline popup is left, plus a small kind-based message
+-- router on top of ui2 (cmdline.messages); no notify source, LSP or redirect.
+-- Started by require("neat").setup({ cmdline = { enabled = true } });
 -- `:Neat cmdline` lives in plugin/neat.lua and the health check in neat.cmdline.checks.
 local require = require("neat.cmdline.util.lazy")
 
@@ -70,6 +71,7 @@ function M.disable()
   require("neat.cmdline.ui").disable()
   require("neat.cmdline.ui2").restore()
   require("neat.cmdline.pager").restore()
+  require("neat.cmdline.messages").restore()
   require("neat.cmdline.confirm").restore()
 end
 
@@ -93,9 +95,11 @@ function M.enable()
     end,
   })
   Config._running = true
+  require("neat.cmdline.ui2").start(Config.options.ui2)
   require("neat.cmdline.ui2").setup(Config.options.ui2)
   require("neat.cmdline.pager").setup(Config.options.ui2.pager)
   require("neat.cmdline.confirm").setup(Config.options.confirm)
+  require("neat.cmdline.messages").setup(Config.options.messages)
   require("neat.cmdline.ui").enable()
   require("neat.cmdline.render").enable()
 end

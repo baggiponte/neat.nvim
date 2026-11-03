@@ -49,6 +49,11 @@ function M.check()
     if type(user.cmdline) == "table" then
       user.cmdline.format = nil
     end
+    -- routes are keyed by message kind, and new kinds may appear
+    defaults.messages.routes = nil
+    if type(user.messages) == "table" then
+      user.messages.routes = nil
+    end
     local unknown = unknown_keys(user, defaults, "", {})
     if #unknown == 0 then
       health.ok("No unknown options")
@@ -81,7 +86,19 @@ function M.check()
   end
   report("cmdline handlers", opts.ui2.disable_cmdline, require("neat.cmdline.ui2").is_patched())
   report("pager float", opts.ui2.pager ~= false, require("neat.cmdline.pager").is_patched())
-  report("confirm dialog", opts.confirm.style ~= "ui2", require("neat.cmdline.confirm").is_patched())
+  report(
+    "message router and confirm dialog",
+    opts.messages.enabled or opts.confirm.style ~= "ui2",
+    require("neat.cmdline.messages").is_patched()
+  )
+  if opts.messages.enabled and not require("neat.cmdline.messages").can_notify() then
+    health.info("messages: toasts need neat's `notify` module (builtin or nvim-notify); messages stay with ui2")
+  end
+  if opts.ui2.cmdheight ~= false and vim.o.cmdheight ~= opts.ui2.cmdheight then
+    health.warn(
+      ("'cmdheight' is %d, neat set %d: something changed it later"):format(vim.o.cmdheight, opts.ui2.cmdheight)
+    )
+  end
 end
 
 return M

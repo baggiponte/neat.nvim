@@ -68,13 +68,20 @@ with the first file buffer, the cmdline popup after |VimEnter|.
 4. MODULES                                                      *neat-modules*
 
 cmdline                                                         *neat-cmdline*
-    Centred command-line popup on top of ui2 (`vim._core.ui2`). Messages,
-    |:messages| and confirm dialogs stay with ui2; neat keeps ui2's bottom
-    line empty
-    while the popup is open, shows ui2's pager as a centred float, and
-    shows |confirm()| prompts in a float. Options: `cmdline` (view, format),
-    `confirm` (`style` = "center", "box", "toast" or "ui2"), `ui2` (`disable_cmdline`,
-    `pager`), `throttle`, `views`, `format`, `debug`. Defaults are in
+    Centred command-line popup on top of ui2 (`vim._core.ui2`). neat turns
+    ui2 on if your config did not (`ui2.enable`) and sets 'cmdheight' to 0
+    (`ui2.cmdheight`, false leaves it), so nothing sits under the
+    statusline. Messages are routed by |ui-messages| kind
+    (`messages.routes`): errors, warnings and short `:echo`/`print()`
+    output become |vim.notify()| toasts (with neat's `notify` module),
+    output longer than `messages.pager_lines` and `:!cmd` output open
+    ui2's pager as a centred float, the rest stays with ui2. |:messages|
+    and |g<| keep working. |confirm()| and `:s///c` prompts show in a
+    float; `z=` and |inputlist()| lists stay with ui2's dialog. Options:
+    `cmdline` (view, format), `messages` (`enabled`, `routes`,
+    `pager_lines`), `confirm` (`style` = "center", "box", "toast" or
+    "ui2"), `ui2` (`enable`, `cmdheight`, `disable_cmdline`, `pager`),
+    `throttle`, `views`, `format`, `debug`. Defaults are in
     lua/neat/cmdline/config/init.lua. Highlight groups keep noice's names
     (`NoiceCmdlinePopup`, ...).
 
@@ -82,7 +89,10 @@ statusline                                                   *neat-statusline*
     Statusline built from sections `a`, `b`, `c`, `x`, `y`, `z`. Each takes
     component names (`mode`, `branch`, `diff`, `fileicon`, `filepath`,
     `filename`, `diagnostics`, `lsp`, `lsp_progress`, `location`,
-    `progress`) or functions `function(ctx) return string end`.
+    `progress`, `recording`, `searchcount`, `showcmd`) or functions
+    `function(ctx) return string end`. `recording`, `searchcount` and
+    `showcmd` (via 'showcmdloc', which neat sets to "statusline") show
+    what the cmdline row did before 'cmdheight' 0.
     `lsp_progress` shows LSP `$/progress` (title, message, percentage)
     and is in section `y` by default. Other options: `palette`, `colors`,
     `icons`, `lsp_scope` ("all" or "buffer"), `diagnostics_update_in_insert`,

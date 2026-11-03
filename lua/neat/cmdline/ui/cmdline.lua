@@ -1,6 +1,6 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: renders through cmdline.render instead of the message manager;
--- confirm() prompts are left to ui2; no pre-0.11 cursor and redraw hacks.
+-- confirm() prompts go to cmdline.confirm; no pre-0.11 cursor and redraw hacks.
 local require = require("neat.cmdline.util.lazy")
 
 local Config = require("neat.cmdline.config")
@@ -177,8 +177,11 @@ function M.is_confirm(prompt)
 end
 
 function M.on_show(event, content, pos, firstc, prompt, indent, level)
+  local Confirm = require("neat.cmdline.confirm")
+  if prompt ~= nil and prompt ~= "" and Confirm.enabled() then
+    Confirm.on_prompt(prompt)
+  end
   if M.is_confirm(prompt) then
-    local Confirm = require("neat.cmdline.confirm")
     if Confirm.enabled() then
       Confirm.show(prompt)
     end
@@ -203,10 +206,7 @@ function M.on_show(event, content, pos, firstc, prompt, indent, level)
 end
 
 function M.on_hide(_, level)
-  local Confirm = require("neat.cmdline.confirm")
-  if Confirm.is_visible() then
-    Confirm.hide()
-  end
+  require("neat.cmdline.confirm").reset()
   if M.cmdlines[level] then
     M.cmdlines[level] = nil
     local active = M.active
