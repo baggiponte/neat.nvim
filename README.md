@@ -6,14 +6,16 @@ plugin. Every module is off until you turn it on, like snacks.nvim.
 neat has no plugin dependencies of its own. `input`, `notify`, `indent` and
 `rename` are adapted from snacks.nvim, and that code ships inside neat (see
 [Credits](#credits-and-licence)): you do not need snacks.nvim installed.
-`cmdline` needs nui.nvim, and a few modules use telescope, gitsigns or
-nvim-web-devicons when they are there.
+`cmdline` needs nui.nvim. Everything else that touches another plugin goes
+through a small adapter (see [Adapters](#adapters)): the defaults use
+telescope, nvim-web-devicons and gitsigns, and you can swap any of them for
+your own picker, notifier, icon set or git integration.
 
 | Module | What it does | Replaces |
 | --- | --- | --- |
 | `cmdline` | Centred command-line popup on top of ui2 | noice.nvim |
 | `statusline` | Small statusline that reads per-buffer caches instead of polling | lualine.nvim |
-| `select` | Telescope dropdown for `vim.ui.select`, with dressing's code-action layout; falls back to the builtin without telescope | dressing.nvim |
+| `select` | `vim.ui.select` through a picker backend (telescope dropdown by default, with dressing's code-action layout); falls back to the builtin without telescope | dressing.nvim |
 | `spell` | `z=` lists spelling suggestions through `vim.ui.select`, so they open in your picker (neat's `select`, fzf-lua, snacks, ...) | |
 | `input` | Floating `vim.ui.input` with history and completion (neo-tree's file completion works) | snacks.nvim input |
 | `notify` | `vim.notify` backends (`builtin` toasts, `native` ui2, `nvim-notify`) | snacks.nvim notifier |
@@ -167,7 +169,9 @@ LSP progress (`lsp_progress`, next to the client names in section `y`), with
 `man`, `neo-tree`, `oil` and `quickfix` layouts. Each component reads a
 per-buffer cache that autocmds invalidate (`DiagnosticChanged`,
 `GitSignsUpdate`, `LspAttach`, `BufWritePost`, ...), and updates go through a
-single scheduled `redrawstatus!`.
+single scheduled `redrawstatus!`. File icons and git status come from
+`providers` (`icons = 'devicons'`, `git = 'gitsigns'` by default; `false` turns
+one off, a table plugs in your own, see [Adapters](#adapters)).
 
 Defaults live in `lua/neat/statusline/config.lua`. Sections `a`, `b`, `c`, `x`,
 `y`, `z` take built-in component names (`mode`, `branch`, `diff`, `fileicon`,
@@ -184,12 +188,18 @@ default palette is gruvbox-material.
 ## select, input, notify, indent
 
 ```lua
-select = { enabled = true, trim_prompt = true, telescope = nil, format_item_override = {} },
-spell = { enabled = true },          -- z= through vim.ui.select (any picker; Neovim's numbered list by default)
+select = {
+  enabled = true,
+  backend = 'telescope',             -- 'telescope' | 'builtin' | your own adapter
+  trim_prompt = true,
+  telescope = {},                    -- picker opts; {} = dropdown theme
+  format_item_override = {},         -- kind -> format_item
+},
+spell = { enabled = true, keymap = true }, -- z= through vim.ui.select; keymap = false to map <Plug>(neat-spell-suggest) yourself
 input = { enabled = true },          -- icon, icon_pos, prompt_pos, win, expand (as in snacks' input)
 notify = {
   enabled = true,
-  backend = 'builtin',               -- 'builtin' | 'native' | 'nvim-notify'
+  backend = 'builtin',               -- 'builtin' | 'native' | 'nvim-notify' | your own adapter
   builtin = {},                      -- builtin notifier options (same keys as snacks' notifier)
   nvim_notify = {},                  -- passed to require('notify').setup()
 },
@@ -206,20 +216,88 @@ snacks' names, but it never loads snacks.nvim.
 
 ![select, input, notify and indent](dev/ui-demo/ui.gif)
 
+## Adapters
+
+neat does not assume which plugins you use. Where a module needs another
+plugin, it talks to a small adapter: a table with a few functions. The adapters
+that ship with neat are picked by name and required only when chosen; to use
+something else, pass your own table. The types live in the module sources, so
+LuaLS completes and checks them. Full reference: `:h neat-adapters`.
+
+| Option | Ships with | Your adapter implements |
+| --- | --- | --- |
+| `select.backend` | `'telescope'` (default), `'builtin'` | `available()`, `select(items, opts, on_choice)` |
+| `notify.backend` | `'builtin'` (default), `'native'`, `'nvim-notify'` | `notify(msg, level, opts)`, `toasts`, optional `history()` and `setup(opts)` |
+| `statusline.providers.icons` | `'devicons'` (default) | `load()`, `get(name, filetype)` |
+| `statusline.providers.git` | `'gitsigns'` (default) | `status(buf)`, optional `events` |
+
+Two rules: require the plugin inside the functions, not when the table is
+built, and report a missing plugin (`available()`/`load()` return false)
+instead of erroring. neat then falls back to Neovim's own menu, `:messages`, no
+icons, or the branch from `.git/HEAD`.
+
+For example, mini.pick as the picker and mini.icons for file icons:
+
+```lua
+require('neat').setup({
+  select = {
+    enabled = true,
+    backend = {
+      available = function() return pcall(require, 'mini.pick') end,
+      select = function(items, opts, on_choice)
+        require('mini.pick').ui_select(items, opts, on_choice)
+      end,
+    },
+  },
+  statusline = {
+    enabled = true,
+    providers = {
+      icons = {
+        -- called once after the first draw: the statusline is drawn under
+        -- textlock, where a plugin manager's require hook can fail
+        load = function()
+          local ok, icons = pcall(require, 'mini.icons')
+          if ok and not _G.MiniIcons then icons.setup() end
+          return ok
+        end,
+        get = function(name) return MiniIcons.get('file', name) end,
+      },
+    },
+  },
+})
+```
+
+`:h neat-adapters` has the notifier (mini.notify) and git (mini.diff/mini.git)
+examples too.
+
 ## Develop
 
 Formatting runs on commit through [prek](https://github.com/j178/prek)
 (`prek install` once; `prek run --all-files` to format everything), with the
 StyLua version CI uses.
 
-The `check` workflow runs stylua, a LuaLS type check (errors only), and
-`tests/smoke.lua`, which loads neat.nvim headless the way `vim.pack` does and
-exercises each module, `:Neat` and `:checkhealth neat`:
+Every function is annotated with LuaCATS types. The `check` workflow runs:
+
+- stylua;
+- a LuaLS type check at warning level (lua-language-server 3.18.1, with
+  nui.nvim in `deps/` for its types);
+- `tests/annotations.lua`, which fails when a function has a parameter without
+  `---@param`;
+- `tests/smoke.lua`, which loads neat.nvim headless the way `vim.pack` does and
+  exercises each module, the adapters, `:Neat` and `:checkhealth neat`.
 
 ```sh
 git clone --depth 1 https://github.com/MunifTanjim/nui.nvim deps/nui.nvim
-nvim --headless --clean --cmd "set rtp^=$PWD/deps/nui.nvim" --cmd "set rtp^=$PWD" -c 'luafile tests/smoke.lua'
+lua-language-server --check "$PWD" --checklevel=Warning
+nvim --headless --clean -l tests/annotations.lua
+SMOKE=ui nvim --headless --clean --cmd "set rtp^=$PWD/deps/nui.nvim" --cmd "set rtp^=$PWD" --cmd 'luafile tests/smoke.lua'
 ```
+
+`SMOKE` is one of `off`, `statusline`, `ui` or `cmdline`.
+
+New modules follow the same contract: `lua/neat/<name>/init.lua` exports
+`defaults` and `setup(opts)`, is cheap to require, and loads anything heavy on
+first use.
 
 `dev/` holds the demo recordings and the review tooling used while replacing
 noice, snacks, dressing and lualine.
