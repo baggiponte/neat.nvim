@@ -52,7 +52,7 @@ function M.get_hl_group(attr_id)
     return "Normal"
   end
   M.queue[attr_id] = attr_id
-  return "NoiceAttr" .. tostring(attr_id)
+  return "NeatAttr" .. tostring(attr_id)
 end
 
 function M.update()
