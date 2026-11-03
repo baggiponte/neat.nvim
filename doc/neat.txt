@@ -102,7 +102,9 @@ statusline                                                   *neat-statusline*
 
 select                                                           *neat-select*
     |vim.ui.select()| as a telescope dropdown; the builtin menu without
-    telescope. Options: `trim_prompt`, `telescope`, `format_item_override`.
+    telescope. `z=` shows spelling suggestions in the same picker (a count,
+    as in `3z=`, still picks directly). Options: `trim_prompt`, `telescope`,
+    `format_item_override`, `spell` (false keeps the builtin `z=`).
 
 input                                                             *neat-input*
     |vim.ui.input()| in a floating window with history and completion.
