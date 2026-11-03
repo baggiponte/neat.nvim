@@ -295,11 +295,18 @@ Every function is annotated with LuaCATS types. The `check` workflow runs:
 - `tests/smoke.lua`, which loads neat.nvim headless the way `vim.pack` does and
   exercises each module, the adapters, `:Neat` and `:checkhealth neat`.
 
+The `ui2 contract` workflow runs `tests/ui2_contract.lua`, which loads
+Neovim's real ui2 modules and checks that every private field neat patches is
+still there (the smoke test only sees a stand-in). It runs on stable with
+every change, and on nightly every Monday or by hand from the Actions tab, so
+an upstream ui2 change shows up before it reaches a release.
+
 ```sh
 git clone --depth 1 https://github.com/MunifTanjim/nui.nvim deps/nui.nvim
 lua-language-server --check "$PWD" --checklevel=Warning
 nvim --headless --clean -l tests/annotations.lua
 SMOKE=ui nvim --headless --clean --cmd "set rtp^=$PWD/deps/nui.nvim" --cmd "set rtp^=$PWD" --cmd 'luafile tests/smoke.lua'
+nvim --headless --clean --cmd "set rtp^=$PWD" -l tests/ui2_contract.lua
 ```
 
 `SMOKE` is one of `off`, `statusline`, `ui` or `cmdline`.

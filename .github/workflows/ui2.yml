@@ -1,0 +1,31 @@
+name: ui2 contract
+
+# neat patches Neovim's private, experimental ui2 (vim._core.ui2).
+# tests/ui2_contract.lua checks that the fields it touches still exist.
+# Stable runs with every change; nightly runs weekly (and by hand), so an
+# upstream change shows up here without blocking pull requests.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  contract:
+    name: ui2 contract (${{ matrix.version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # nightly only on the weekly run or by hand
+        version: ${{ fromJSON((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '["stable", "nightly"]' || '["stable"]') }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.version }}
+      - name: Run tests/ui2_contract.lua
+        run: nvim --headless --clean --cmd "set rtp^=$PWD" -l tests/ui2_contract.lua
