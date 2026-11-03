@@ -16,6 +16,7 @@ neat-notify	neat.txt	/*neat-notify*
 neat-rename	neat.txt	/*neat-rename*
 neat-select	neat.txt	/*neat-select*
 neat-setup	neat.txt	/*neat-setup*
+neat-spell	neat.txt	/*neat-spell*
 neat-statusline	neat.txt	/*neat-statusline*
 neat.setup()	neat.txt	/*neat.setup()*
 neat.txt	neat.txt	/*neat.txt*

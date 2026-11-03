@@ -14,6 +14,7 @@ nvim-web-devicons when they are there.
 | `cmdline` | Centred command-line popup on top of ui2 | noice.nvim |
 | `statusline` | Small statusline that reads per-buffer caches instead of polling | lualine.nvim |
 | `select` | Telescope dropdown for `vim.ui.select`, with dressing's code-action layout; falls back to the builtin without telescope | dressing.nvim |
+| `spell` | `z=` lists spelling suggestions through `vim.ui.select`, so they open in your picker (neat's `select`, fzf-lua, snacks, ...) | |
 | `input` | Floating `vim.ui.input` with history and completion (neo-tree's file completion works) | snacks.nvim input |
 | `notify` | `vim.notify` backends (`builtin` toasts, `native` ui2, `nvim-notify`) | snacks.nvim notifier |
 | `indent` | Indent and scope guides (`builtin`, without animation, or `blink` for blink.indent) | snacks.nvim indent |
@@ -36,6 +37,7 @@ require('neat').setup({
   input = { enabled = true },
   notify = { enabled = true },  -- backend = 'builtin' by default
   indent = { enabled = true },  -- backend = 'builtin' by default
+  spell = { enabled = true },   -- z= through vim.ui.select
 })
 ```
 
@@ -71,13 +73,30 @@ ui2 patch applied.
 
 ## cmdline
 
-Messages, `:messages`, `g<` and confirm dialogs stay with Neovim's built-in ui2
-(`vim._core.ui2`, enable it with `require('vim._core.ui2').enable({})`);
-completion stays with your completion plugin.
+The popup sits on top of Neovim's built-in ui2 (`vim._core.ui2`). neat turns
+ui2 on if your config did not (`ui2 = { enable = false }` to skip that) and
+sets `'cmdheight'` to 0 (`ui2 = { cmdheight = false }` leaves it), so no empty
+row is left under the statusline. Completion stays with your completion plugin.
+
+Messages are routed by kind, like noice does it (`lua/neat/cmdline/messages.lua`):
+
+| Kind | Goes to |
+| --- | --- |
+| errors and warnings (`emsg`, `wmsg`, `lua_error`, ...) | a `vim.notify()` toast |
+| `:echo`, `print()`, `:ls`, `:set` (`echo`, `lua_print`, `list_cmd`, ...) | a toast, or ui2's pager when longer than `pager_lines` (5) |
+| `:!cmd` output (`shell_*`) | ui2's pager |
+| anything else (`bufwrite`, `undo`, `progress`, ...) | ui2's message window |
+| `confirm()`, `:s///c` | neat's confirm float |
+| `z=`, `inputlist()` lists | ui2's dialog |
+
+Toasts need neat's `notify` module with the `builtin` or `nvim-notify` backend;
+otherwise those messages stay with ui2. `:messages` and `g<` still work. Change
+a route with `messages = { routes = { echo = 'ui2' } }`, or set
+`messages = { enabled = false }` to leave every message to ui2.
 
 Both the popup and ui2 attach to the cmdline UI events, so without help
 the command line would be drawn twice: in the popup and on ui2's bottom line.
-neat wraps ui2's cmdline handlers (`lua/neat/cmdline/ui2.lua`):
+neat wraps ui2's handlers (`lua/neat/cmdline/ui2.lua`):
 
 - ui2 still sees `cmdline_show`, but with empty content. It keeps track of
   the cmdline level and prompt, so it hides showcmd and the ruler and routes
@@ -91,6 +110,9 @@ neat wraps ui2's cmdline handlers (`lua/neat/cmdline/ui2.lua`):
   with a border instead of a panel at the bottom (`lua/neat/cmdline/pager.lua`).
   ui2 still owns it: `q` closes it. Set `ui2 = { pager = false }` to keep
   the panel.
+
+With `'cmdheight'` 0 the statusline takes over what the cmdline row showed:
+`recording @q`, the search count `[3/12]` and pending keys (`showcmd`).
 
 Set `ui2 = { disable_cmdline = false }` to leave ui2 alone (the cmdline then
 shows in both places). This relies on ui2's private module layout; if it
@@ -115,8 +137,15 @@ cmdline = {
       input       = { view = 'cmdline_input', icon = '󰥻 ' }, -- input()
     },
   },
+  messages = {
+    enabled = true,
+    pager_lines = 5,
+    routes = { emsg = 'notify', echo = 'auto', list_cmd = 'auto', shell_out = 'pager', ... }, -- 'notify' | 'pager' | 'auto' | 'ui2' | false
+  },
   confirm = { style = 'center', title = ' Confirm ' }, -- 'center' | 'box' | 'toast' | 'ui2'
   ui2 = {
+    enable = true,     -- turn ui2 on if your config did not
+    cmdheight = 0,     -- or false to leave 'cmdheight' alone
     disable_cmdline = true,
     pager = { width = 0.8, height = 0.6, border = 'rounded', title = ' Messages ' }, -- or false
   },
@@ -143,7 +172,7 @@ single scheduled `redrawstatus!`.
 Defaults live in `lua/neat/statusline/config.lua`. Sections `a`, `b`, `c`, `x`,
 `y`, `z` take built-in component names (`mode`, `branch`, `diff`, `fileicon`,
 `filepath`, `filename`, `diagnostics`, `lsp`, `lsp_progress`, `location`,
-`progress`) or
+`progress`, `recording`, `searchcount`, `showcmd`) or
 functions `function(ctx) return string end`. Colours are palette keys, hex
 strings or highlight tables; 256-colour fallbacks are derived for terminals
 without truecolor. The `Stl*` highlight groups are defined with
@@ -156,6 +185,7 @@ default palette is gruvbox-material.
 
 ```lua
 select = { enabled = true, trim_prompt = true, telescope = nil, format_item_override = {} },
+spell = { enabled = true },          -- z= through vim.ui.select (any picker; Neovim's numbered list by default)
 input = { enabled = true },          -- icon, icon_pos, prompt_pos, win, expand (as in snacks' input)
 notify = {
   enabled = true,

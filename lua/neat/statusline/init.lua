@@ -154,6 +154,8 @@ local function autocmds()
     vim.cmd('redrawstatus')
   end)
 
+  au({ 'RecordingEnter', 'RecordingLeave' }, redraw)
+
   au('DiagnosticChanged', function(args)
     if not cfg.diagnostics_update_in_insert and api.nvim_get_mode().mode:find('^i') then
       diag_dirty = true
@@ -263,6 +265,13 @@ function M.setup(opts)
 
   hl.setup(cfg)
   cache.setup(cfg)
+
+  -- the 'showcmd' component draws through %S, which needs 'showcmdloc' = 'statusline'
+  for _, list in pairs(cfg.sections) do
+    if vim.tbl_contains(list, 'showcmd') and vim.o.showcmdloc == 'last' then
+      vim.o.showcmdloc = 'statusline'
+    end
+  end
 
   compiled_active = compile(cfg.sections)
   compiled_inactive = compile(cfg.inactive_sections)

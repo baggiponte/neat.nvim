@@ -15,6 +15,7 @@ M.ns = vim.api.nvim_create_namespace("noice")
 ---@field cmdline? cmdline.Opts.cmdline
 ---@field ui2? cmdline.Opts.ui2
 ---@field confirm? CmdlineConfirmOptions
+---@field messages? CmdlineMessagesOptions
 ---@field throttle? number milliseconds between updates when Neovim is not blocking
 ---@field views? table<string, NoiceViewOptions> override the built-in views, see cmdline.config.views
 ---@field format? NoiceFormatOptions override formatter options, see cmdline.config.format
@@ -26,6 +27,8 @@ M.ns = vim.api.nvim_create_namespace("noice")
 ---@field format? table<string, CmdlineFormat|false>
 
 ---@class cmdline.Opts.ui2
+---@field enable? boolean
+---@field cmdheight? integer|false
 ---@field disable_cmdline? boolean
 ---@field pager? CmdlinePagerOptions|false
 
@@ -55,6 +58,14 @@ function M.defaults()
     },
     -- Coexistence with Neovim's experimental ui2 (vim._core.ui2).
     ui2 = {
+      -- Turn ui2 on (once a UI is attached) if your config did not. With
+      -- 'cmdheight' 0 its messages go to the "msg" window above the statusline.
+      enable = true,
+      -- 'cmdheight' to set: the popup does not need a cmdline row, and the
+      -- statusline shows mode, recording, showcmd and the search count.
+      -- false leaves the option alone.
+      ---@type integer|false
+      cmdheight = 0,
       -- When ui2 is enabled, stop it from drawing the cmdline (cmdline.nvim
       -- draws it) while ui2 keeps handling messages.
       disable_cmdline = true,
@@ -66,6 +77,32 @@ function M.defaults()
         height = 0.6, -- maximum fraction of the editor height, or lines
         border = "rounded",
         title = " Messages ",
+      },
+    },
+    -- Where ui2's messages go, by `msg_show` kind (see :h ui-messages).
+    -- "notify": vim.notify() toasts (needs neat's notify module with the
+    -- builtin or nvim-notify backend, else falls back to ui2); "pager": ui2's
+    -- pager; "auto": the pager above `pager_lines` lines, else a toast; "ui2"
+    -- or unlisted: ui2's own target. Set a kind to false to leave it to ui2.
+    ---@type CmdlineMessagesOptions
+    messages = {
+      enabled = true,
+      pager_lines = 5,
+      routes = {
+        [""] = "auto",
+        echo = "auto",
+        echomsg = "auto",
+        lua_print = "auto",
+        list_cmd = "auto",
+        emsg = "notify",
+        echoerr = "notify",
+        lua_error = "notify",
+        rpc_error = "notify",
+        wmsg = "notify",
+        shell_cmd = "pager",
+        shell_out = "pager",
+        shell_err = "pager",
+        shell_ret = "pager",
       },
     },
     -- confirm() and `:s///c` prompts
@@ -106,7 +143,20 @@ local function validate(o)
     return v == "center" or v == "box" or v == "toast" or v == "ui2"
   end, false, '"center", "box", "toast" or "ui2"')
   vim.validate("ui2", o.ui2, "table")
+  vim.validate("ui2.enable", o.ui2.enable, "boolean")
+  vim.validate("ui2.cmdheight", o.ui2.cmdheight, function(v)
+    return v == false or (type(v) == "number" and v >= 0)
+  end, false, "a number >= 0 or false")
   vim.validate("ui2.disable_cmdline", o.ui2.disable_cmdline, "boolean")
+  vim.validate("messages", o.messages, "table")
+  vim.validate("messages.enabled", o.messages.enabled, "boolean")
+  vim.validate("messages.pager_lines", o.messages.pager_lines, "number")
+  vim.validate("messages.routes", o.messages.routes, "table")
+  for kind, route in pairs(o.messages.routes) do
+    vim.validate("messages.routes[" .. vim.inspect(kind) .. "]", route, function(v)
+      return v == false or v == "notify" or v == "pager" or v == "auto" or v == "ui2"
+    end, false, '"notify", "pager", "auto", "ui2" or false')
+  end
   vim.validate("ui2.pager", o.ui2.pager, function(v)
     return v == false or type(v) == "table"
   end, false, "table or false")

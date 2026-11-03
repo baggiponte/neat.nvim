@@ -1,8 +1,9 @@
 -- Adapted from noice.nvim (Apache-2.0) by Folke Lemaitre; modified.
 -- Changes: noice's `confirm` view and formatter, rewritten as a standalone
--- float. The question comes from ui2's `msg_show` "confirm" event (or from the
--- prompt itself for `:s///c`) and the buttons from the cmdline prompt. Adds
--- "center" (middle of the editor) and "toast" (top-right corner) placements.
+-- float. The question comes from ui2's `msg_show` "confirm" event, handed over
+-- by neat.cmdline.messages (or from the prompt itself for `:s///c`), and the
+-- buttons from the cmdline prompt. Adds "center" (middle of the editor) and
+-- "toast" (top-right corner) placements.
 
 local M = {}
 
@@ -17,7 +18,6 @@ M.opts = {
 }
 
 local ns = vim.api.nvim_create_namespace("neat.cmdline.confirm")
-local MARK = "__cmdline_nvim_msg_show"
 
 ---@type string?
 M._question = nil
@@ -145,73 +145,80 @@ function M.is_visible()
   return M._win ~= nil and vim.api.nvim_win_is_valid(M._win)
 end
 
----@return table?
-local function get_ui2()
+---@type "confirm"|"other"|nil kind of the prompt the cmdline shows right now
+M._prompt_kind = nil
+---@type fun()?
+M._pending = nil
+
+-- Since Neovim 0.12 the text before every prompt that waits for a key or a
+-- number arrives as a "confirm" message: confirm() and `:s///c` questions,
+-- but also the `z=` suggestions and inputlist() items. Only choice prompts
+-- ("(Y)es, [N]o") open our float; the rest go back to ui2. The message may
+-- come before or after its prompt, so hold it until we know which.
+
+--- A "confirm" message from ui2 (neat.cmdline.messages calls this).
+---@param content [integer, string, integer][]
+---@param forward fun() hands the message to ui2
+function M.on_message(content, forward)
+  local text = require("neat.cmdline.messages").text(content)
+  if M._prompt_kind == "other" then
+    return M.forward(forward)
+  end
+  M._question = text
+  if M._prompt_kind == "confirm" then
+    -- the question came after the prompt (ui2 schedules some messages)
+    if M.is_visible() and M._prompt then
+      M.show(M._prompt)
+    end
+    return
+  end
+  M._pending = forward
+end
+
+--- Hand a message to ui2 while a prompt is open, so ui2 shows it in its
+--- dialog window (which stays until the prompt is answered) rather than as a
+--- message that times out.
+---@param forward fun()
+function M.forward(forward)
   local ui2 = package.loaded["vim._core.ui2"]
-  if type(ui2) == "table" and type(ui2.msg) == "table" then
-    return ui2
+  local cmd = type(ui2) == "table" and type(ui2.cmd) == "table" and ui2.cmd or nil
+  if cmd and not cmd.prompt then
+    cmd.prompt = true
+  end
+  forward()
+end
+
+--- The cmdline opened a prompt (called for ui2's and neat's cmdline_show).
+---@param prompt string
+function M.on_prompt(prompt)
+  local kind = require("neat.cmdline.ui.cmdline").is_confirm(prompt) and "confirm" or "other"
+  if M._prompt_kind == kind then
+    return
+  end
+  M._prompt_kind = kind
+  local pending = M._pending
+  M._pending = nil
+  if kind == "other" then
+    M._question = nil
+    if pending then
+      M.forward(pending)
+    end
   end
 end
 
--- Keep ui2 from drawing the confirm question; we show it in our float.
-local function patch()
-  local ui2 = get_ui2()
-  if not ui2 or type(ui2.msg.msg_show) ~= "function" then
-    return false
-  end
-  if ui2.msg[MARK] then
-    return true
-  end
-  local msg_show = ui2.msg.msg_show
-  ui2.msg[MARK] = msg_show
-  ui2.msg.msg_show = function(kind, content, ...)
-    if M.enabled() and kind == "confirm" then
-      local text = {}
-      for _, chunk in ipairs(content or {}) do
-        text[#text + 1] = chunk[2]
-      end
-      M._question = table.concat(text)
-      -- ui2 may get the question after the prompt (msg_show is scheduled)
-      if M.is_visible() and M._prompt then
-        M.show(M._prompt)
-      end
-      return
-    end
-    return msg_show(kind, content, ...)
-  end
-  return true
+--- The prompt closed.
+function M.reset()
+  M._prompt_kind, M._pending = nil, nil
+  M.hide()
 end
 
 ---@param opts? CmdlineConfirmOptions
 function M.setup(opts)
   M.opts = vim.tbl_deep_extend("force", M.opts, opts or {})
-  if not M.enabled() then
-    return
-  end
-  patch()
-  vim.api.nvim_create_autocmd("UIEnter", {
-    group = vim.api.nvim_create_augroup("neat.cmdline.confirm", { clear = true }),
-    callback = function()
-      vim.schedule(patch)
-    end,
-  })
-end
-
---- Whether ui2's message module is patched right now.
----@return boolean
-function M.is_patched()
-  local ui2 = get_ui2()
-  return ui2 ~= nil and ui2.msg[MARK] ~= nil
 end
 
 function M.restore()
-  M.hide()
-  pcall(vim.api.nvim_del_augroup_by_name, "neat.cmdline.confirm")
-  local ui2 = get_ui2()
-  if ui2 and ui2.msg[MARK] then
-    ui2.msg.msg_show = ui2.msg[MARK]
-    ui2.msg[MARK] = nil
-  end
+  M.reset()
 end
 
 return M

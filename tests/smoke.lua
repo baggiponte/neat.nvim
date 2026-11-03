@@ -43,7 +43,8 @@ function tests.off()
   check(vim.fn.exists(":Neat") == 2, ":Neat exists")
   check(not loaded("neat"), "nothing is required without vim.g.neat")
   require("neat").setup({})
-  for _, mod in ipairs({ "neat.statusline", "neat.notify", "neat.select", "neat.indent", "neat.cmdline" }) do
+  local modules = { "neat.statusline", "neat.notify", "neat.select", "neat.indent", "neat.cmdline", "neat.spell" }
+  for _, mod in ipairs(modules) do
     check(not loaded(mod), mod .. " is not loaded when off")
   end
   check(vim.go.statusline == initial_statusline, "'statusline' is untouched")
@@ -111,6 +112,19 @@ function tests.statusline()
   vim.bo.filetype = "neo-tree"
   check(not sl.render():find(vim.fn.fnamemodify(vim.fn.getcwd(), ":~"), 1, true), "the neo-tree statusline is empty")
   vim.bo.filetype = ""
+
+  -- what the cmdline row showed before 'cmdheight' 0
+  vim.cmd("enew")
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "foo", "bar", "foo", "foo" })
+  vim.fn.setreg("/", "foo")
+  vim.o.hlsearch = true
+  vim.v.hlsearch = 1
+  check(sl.render():find("/3]", 1, true) ~= nil, "searchcount shows [x/3] for the last search")
+  vim.v.hlsearch = 0
+  check(sl.render():find("/3]", 1, true) == nil, "searchcount hides after :nohlsearch")
+  check(vim.o.showcmdloc == "statusline", "the showcmd component moves 'showcmd' into the statusline")
+  check(sl.render():find("%S", 1, true) ~= nil, "showcmd draws through %S")
+  vim.cmd("bwipeout!")
   check(#health_errors() == 0, ":checkhealth neat has no errors")
 end
 
@@ -125,6 +139,24 @@ function tests.ui()
   check(loaded("neat.notify.notifier"), "the first vim.notify() loads the notifier")
   check(vim.notify == require("neat.notify.notifier").notify, "vim.notify is the notifier after the first call")
   check(vim.ui.select == require("neat.select").select, "vim.ui.select is neat's")
+  check(vim.fn.maparg("z=", "n") ~= "", "spell maps z=")
+  -- z= hands the suggestions to whatever vim.ui.select is, and replaces the word
+  local select = vim.ui.select
+  local got ---@type {items: string[], prompt: string}?
+  vim.ui.select = function(items, opts, on_choice)
+    got = { items = items, prompt = opts.prompt }
+    on_choice(items[1])
+  end
+  vim.cmd("enew")
+  vim.bo.spelllang = "en"
+  vim.wo.spell = true
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, { "teh cat" })
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  require("neat.spell").suggest()
+  check(got ~= nil and #got.items > 0 and got.prompt == 'Change "teh" to', "z= passes suggestions to vim.ui.select")
+  check(got ~= nil and vim.api.nvim_get_current_line() == got.items[1] .. " cat", "z= replaces the word with the pick")
+  vim.ui.select = select
+  vim.cmd("bwipeout!")
   vim.cmd("edit tests/smoke.lua")
   check(loaded("neat.indent.guides"), "opening a file loads the indent engine")
   vim.cmd("Neat indent off")
@@ -157,7 +189,85 @@ function tests.cmdline()
       check(ok, "require('" .. mod .. "')" .. (ok and "" or ": " .. tostring(err)))
     end
   end
+  check(vim.o.cmdheight == 0, "cmdline sets 'cmdheight' to 0")
   check(#health_errors() == 0, ":checkhealth neat has no errors")
+
+  -- message routing, against a stand-in for ui2's private module layout
+  local shown = {} ---@type {kind: string, target: string?, prompt: boolean}[]
+  local fake = { cmd = { prompt = false, level = 0 }, cfg = { msg = { targets = { default = "msg" } } }, msg = {} }
+  function fake.msg.msg_show(kind)
+    shown[#shown + 1] = { kind = kind, target = fake.cfg.msg.targets[kind], prompt = fake.cmd.prompt }
+  end
+  package.loaded["vim._core.ui2"] = fake
+  local Messages = require("neat.cmdline.messages")
+  local Confirm = require("neat.cmdline.confirm")
+  local Cmdline = require("neat.cmdline.ui.cmdline")
+  Messages.setup(Config.options.messages)
+  check(Messages.is_patched(), "messages: ui2's msg_show is wrapped")
+  local function chunks(text)
+    return { { 0, text, 0 } }
+  end
+
+  -- z= / inputlist(): the list arrives as a "confirm" message before a number prompt
+  shown = {}
+  fake.msg.msg_show("confirm", chunks('Change "teh" to:\n 1 "the"\n 2 "ten"'), false, true, false, 1, "")
+  check(#shown == 0, "z=: the list waits for its prompt")
+  local number_prompt = "Type number and <Enter> or click with the mouse (q or empty cancels): "
+  Cmdline.on_show("cmdline_show", {}, 0, "", number_prompt, 0, 1)
+  check(#shown == 1 and shown[1].kind == "confirm", "z=: the list goes to ui2 once the prompt is a number prompt")
+  check(shown[1] and shown[1].prompt == true, "z=: ui2 sees an open prompt, so it uses its dialog window")
+  check(not Confirm.is_visible(), "z=: no confirm float")
+  Cmdline.on_hide("cmdline_hide", 1)
+
+  -- confirm(): the question stays in neat's float
+  shown = {}
+  fake.cmd.prompt = false
+  fake.msg.msg_show("confirm", chunks("Save changes?"), false, true, false, 2, "")
+  Cmdline.on_show("cmdline_show", {}, 0, "", "(Y)es, [N]o, (C)ancel: ", 0, 1)
+  check(#shown == 0, "confirm(): the question is not passed to ui2")
+  check(Confirm.is_visible() and Confirm._question == "Save changes?", "confirm(): float shows the question")
+  Cmdline.on_hide("cmdline_hide", 1)
+  check(not Confirm.is_visible(), "confirm(): float closes with the prompt")
+
+  -- the message arrives after its prompt (ui2 schedules some messages)
+  shown = {}
+  fake.cmd.prompt = false
+  Cmdline.on_show("cmdline_show", {}, 0, "", "Type number and <Enter> (q or empty cancels): ", 0, 1)
+  fake.msg.msg_show("confirm", chunks("1 a\n2 b"), false, true, false, 3, "")
+  check(#shown == 1, "inputlist(): a late list goes straight to ui2")
+  Cmdline.on_hide("cmdline_hide", 1)
+
+  -- ordinary messages: toasts, pager or ui2 by kind
+  local notified = {} ---@type {msg: string, level: integer}[]
+  local notify, can_notify = vim.notify, Messages.can_notify
+  vim.notify = function(msg, level)
+    notified[#notified + 1] = { msg = msg, level = level }
+  end
+  Messages.can_notify = function()
+    return true
+  end
+  shown = {}
+  fake.msg.msg_show("emsg", chunks("E492: Not an editor command: foo"), false, true, false, 4, "")
+  check(#notified == 1 and notified[1].level == vim.log.levels.ERROR and #shown == 0, "emsg: an error toast")
+  fake.msg.msg_show("echo", chunks("hello"), false, true, false, 5, "")
+  check(#notified == 2 and notified[2].msg == "hello", "echo: a toast")
+  fake.msg.msg_show("list_cmd", chunks(("line\n"):rep(20)), false, true, false, 6, "")
+  check(#shown == 1 and shown[1].target == "pager", "list_cmd, 20 lines: ui2's pager")
+  check(fake.cfg.msg.targets.list_cmd == nil, "list_cmd: ui2's targets are restored")
+  fake.msg.msg_show("shell_out", chunks("x"), false, true, false, 7, "")
+  check(#shown == 2 and shown[2].target == "pager", "shell_out: ui2's pager")
+  fake.msg.msg_show("bufwrite", chunks('"x" 1L, 2B written'), false, true, false, 8, "")
+  check(#shown == 3 and shown[3].target == nil and #notified == 2, "bufwrite: stays with ui2")
+  Messages.can_notify = function()
+    return false
+  end
+  fake.msg.msg_show("emsg", chunks("E1"), false, true, false, 9, "")
+  check(#shown == 4 and #notified == 2, "emsg without a toast backend: stays with ui2")
+  vim.notify, Messages.can_notify = notify, can_notify
+
+  Messages.restore()
+  check(not Messages.is_patched(), "messages: restore() unwraps msg_show")
+  package.loaded["vim._core.ui2"] = nil
 end
 
 if name == "ui" then
@@ -166,6 +276,7 @@ if name == "ui" then
     input = { enabled = true },
     notify = { enabled = true, backend = "builtin" },
     indent = { enabled = true, backend = "builtin" },
+    spell = { enabled = true },
   }
 end
 
