@@ -202,7 +202,7 @@ select = {
   telescope = {},                    -- picker opts; {} = dropdown theme
   format_item_override = {},         -- kind -> format_item
 },
-spell = { enabled = true, keymap = true }, -- z= through vim.ui.select; keymap = false to map <Plug>(neat-spell-suggest) yourself
+spell = { enabled = true, keymap = true }, -- maps z=; or skip the module and map <Plug>(neat-spell-suggest), which needs no setup
 input = { enabled = true },          -- icon, icon_pos, prompt_pos, win, expand (as in snacks' input)
 notify = {
   enabled = true,

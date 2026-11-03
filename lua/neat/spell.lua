@@ -81,13 +81,12 @@ function M.suggest()
   )
 end
 
---- Define `<Plug>(neat-spell-suggest)` and map z= to it, unless z= is
---- already mapped or `keymap` is false.
+--- Map z= to `<Plug>(neat-spell-suggest)` (defined in plugin/neat.lua),
+--- unless z= is already mapped or `keymap` is false.
 ---@param opts? neat.spell.Config
 function M.setup(opts)
   local config = vim.tbl_extend("force", M.defaults, opts or {}) ---@type neat.spell.Config
   vim.validate("spell.keymap", config.keymap, "boolean")
-  vim.keymap.set("n", "<Plug>(neat-spell-suggest)", M.suggest, { desc = "neat: spelling suggestions" })
   if config.keymap and vim.fn.maparg("z=", "n") == "" then
     vim.keymap.set(
       "n",
