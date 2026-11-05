@@ -187,6 +187,26 @@ function tests.ui()
   vim.notify("smoke test")
   check(loaded("neat.notify.notifier"), "the first vim.notify() loads the notifier")
   check(require("neat.notify").shows_toasts(), "the builtin backend shows toasts")
+  -- toasts keep clear of ui2's message window, which floats in the same corner
+  do
+    local Notifier = require("neat.notify.notifier")
+    local ui2 = package.loaded["vim._core.ui2"]
+    local msg_win = vim.api.nvim_open_win(vim.api.nvim_create_buf(false, true), false, {
+      relative = "editor",
+      row = 10,
+      col = 0,
+      width = 20,
+      height = 2,
+      border = "rounded",
+    })
+    package.loaded["vim._core.ui2"] = { wins = { msg = msg_win } }
+    local rows = Notifier.reserved_rows()
+    check(#rows == 1 and rows[1][1] == 11 and rows[1][2] == 14, "notify: ui2's message window rows are kept free")
+    vim.api.nvim_win_set_config(msg_win, { hide = true })
+    check(#Notifier.reserved_rows() == 0, "notify: a hidden ui2 message window keeps no rows")
+    vim.api.nvim_win_close(msg_win, true)
+    package.loaded["vim._core.ui2"] = ui2
+  end
   -- a backend of your own
   local notify_backend = {
     toasts = false,

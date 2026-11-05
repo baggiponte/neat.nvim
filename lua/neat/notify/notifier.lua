@@ -673,7 +673,50 @@ function N:new_layout()
   layout.mark(1, vim.o.lines, true)
   layout.mark(1, self.opts.margin.top + (vim.o.tabline == "" and 0 or 1), false)
   layout.mark(vim.o.lines - (self.opts.margin.bottom + (vim.o.laststatus == 0 and 0 or 1)) + 1, vim.o.lines, false)
+  for _, rows in ipairs(N.reserved_rows()) do
+    layout.mark(rows[1], rows[2] - rows[1] + 1, false)
+  end
   return layout
+end
+
+--- Screen rows (first, last; 1-based, border included) that toasts must keep
+--- free because another float sits there: ui2's message window, which with
+--- 'cmdheight' 0 floats in the same bottom-right corner (`bufwrite`, `undo`
+--- and other kinds that stay with ui2). Without this, the two overlap.
+---@return [integer, integer][]
+function N.reserved_rows()
+  local ret = {} ---@type [integer, integer][]
+  local ui2 = package.loaded["vim._core.ui2"]
+  local wins = type(ui2) == "table" and type(ui2.wins) == "table" and ui2.wins or nil
+  local win = wins and wins.msg
+  if type(win) ~= "number" or not vim.api.nvim_win_is_valid(win) then
+    return ret
+  end
+  local config = vim.api.nvim_win_get_config(win)
+  if config.relative == "" or config.hide then
+    return ret
+  end
+  -- win_screenpos() of a float is its outer top row, border included
+  local top = vim.fn.win_screenpos(win)[1]
+  if top == 0 then
+    return ret
+  end
+  local bottom = top + vim.api.nvim_win_get_height(win) - 1
+  local border = config.border
+  if type(border) == "table" then
+    -- [topleft, top, topright, right, botright, bottom, botleft, left]; a side
+    -- without an edge is "", and a slot may be a {char, hl} pair
+    local function edge(i)
+      local e = border[i]
+      e = type(e) == "table" and e[1] or e
+      return type(e) == "string" and e ~= "" and 1 or 0
+    end
+    bottom = bottom + edge(2) + edge(#border >= 6 and 6 or 2)
+  elseif type(border) == "string" and border ~= "none" then
+    bottom = bottom + 2
+  end
+  ret[#ret + 1] = { math.max(top, 1), math.min(bottom, vim.o.lines) }
+  return ret
 end
 
 function N:layout()
@@ -777,5 +820,7 @@ end
 function M.show_history(opts)
   return get():show_history(opts)
 end
+
+M.reserved_rows = N.reserved_rows
 
 return M
