@@ -706,6 +706,8 @@ function N.reserved_rows()
   if type(border) == "table" then
     -- [topleft, top, topright, right, botright, bottom, botleft, left]; a side
     -- without an edge is "", and a slot may be a {char, hl} pair
+    ---@param i integer
+    ---@return integer
     local function edge(i)
       local e = border[i]
       e = type(e) == "table" and e[1] or e
