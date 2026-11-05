@@ -88,6 +88,8 @@ function M.format(message, format, opts)
   if type(format) == "string" then
     format = vim.deepcopy(opts[format] or FormatConfig.builtin[format])
   end
+  -- LuaLS narrows `format` here only on some runs, which made the check flaky
+  ---@cast format NoiceFormat
 
   -- use existing message, with a separate _lines array
   local ret = setmetatable({ _lines = {} }, { __index = message })
