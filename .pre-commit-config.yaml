@@ -11,13 +11,12 @@ repos:
         files: ^(lua|plugin|tests)/.*\.lua$
   - repo: local
     hooks:
-      # Needs nvim and lua-language-server on $PATH; nui.nvim (for its types)
-      # is cloned into deps/ the first time.
+      # Needs nvim and lua-language-server on $PATH. nui.nvim's types come from
+      # the copy vim.pack installs (see .luarc.json); CI clones it into deps/.
       - id: lua-language-server
         name: lua-language-server
         entry: >-
-          sh -c '[ -d deps/nui.nvim ] || git clone -q --depth 1 https://github.com/MunifTanjim/nui.nvim deps/nui.nvim;
-          VIMRUNTIME=$(nvim --clean --headless -c "lua io.write(vim.env.VIMRUNTIME)" -c q)
+          sh -c 'VIMRUNTIME=$(nvim --clean --headless -c "lua io.write(vim.env.VIMRUNTIME)" -c q)
           exec lua-language-server --check . --checklevel=Warning'
         language: system
         files: \.lua$|^\.luarc\.json$
