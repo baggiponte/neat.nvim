@@ -4,7 +4,8 @@
   "workspace.library": [
     "$VIMRUNTIME/lua",
     "${3rd}/luv/library",
-    "deps/nui.nvim/lua"
+    "deps/nui.nvim/lua",
+    "~/.local/share/nvim/site/pack/core/opt/nui.nvim/lua"
   ],
   "workspace.checkThirdParty": false,
   "diagnostics.globals": [
