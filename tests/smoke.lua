@@ -357,7 +357,7 @@ function tests.cmdline()
   -- message routing, against a stand-in for ui2's private module layout
   local shown = {} ---@type {kind: string, target: string?, prompt: boolean, text: string}[]
   local fake = { cmd = { prompt = false, level = 0 }, cfg = { msg = { targets = { default = "msg" } } }, msg = {} }
-  function fake.msg.msg_show(kind, content)
+  function fake.msg.msg_show(kind, content, ...)
     local text = require("neat.cmdline.messages").text(content)
     shown[#shown + 1] = { kind = kind, target = fake.cfg.msg.targets[kind], prompt = fake.cmd.prompt, text = text }
   end
