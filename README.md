@@ -281,6 +281,11 @@ examples too.
 
 ## Develop
 
+StyLua and the LuaLS type check run on commit through
+[prek](https://github.com/j178/prek) (`prek install` once; `prek run
+--all-files` to run them on everything). The type check needs `nvim` and
+`lua-language-server` on your `$PATH`.
+
 Every function is annotated with LuaCATS types. The `check` workflow runs:
 
 - stylua;
@@ -291,27 +296,14 @@ Every function is annotated with LuaCATS types. The `check` workflow runs:
 - `tests/smoke.lua`, which loads neat.nvim headless the way `vim.pack` does and
   exercises each module, the adapters, `:Neat` and `:checkhealth neat`.
 
-The same checks run locally as git hooks through
-[prek](https://github.com/j178/prek), a drop-in pre-commit. stylua, the
-annotations check and the type check run on commit, and the smoke tests run on
-push. They need `nvim` and `lua-language-server` on your `$PATH`; nui.nvim is
-cloned into `deps/` the first time.
-
 ```sh
-prek install                                  # once: pre-commit and pre-push hooks
-prek run --all-files                          # what runs on commit
-prek run --all-files --hook-stage pre-push    # the smoke tests
+git clone --depth 1 https://github.com/MunifTanjim/nui.nvim deps/nui.nvim
+lua-language-server --check "$PWD" --checklevel=Warning
+nvim --headless --clean -l tests/annotations.lua
+SMOKE=ui nvim --headless --clean --cmd "set rtp^=$PWD/deps/nui.nvim" --cmd "set rtp^=$PWD" --cmd 'luafile tests/smoke.lua'
 ```
 
-Each check also runs on its own:
-
-```sh
-tests/check.sh annotations
-tests/check.sh luals
-tests/check.sh smoke            # all four scenarios, or name some: smoke ui cmdline
-```
-
-The smoke scenarios are `off`, `statusline`, `ui` and `cmdline`.
+`SMOKE` is one of `off`, `statusline`, `ui` or `cmdline`.
 
 New modules follow the same contract: `lua/neat/<name>/init.lua` exports
 `defaults` and `setup(opts)`, is cheap to require, and loads anything heavy on

@@ -1,14 +1,8 @@
 # Run with prek (https://github.com/j178/prek), a drop-in pre-commit:
-#   prek install        # once, installs the pre-commit and pre-push hooks
+#   prek install        # once, installs the git hook
 #   prek run --all-files
-#   prek run --all-files --hook-stage pre-push   # the smoke tests too
 # stylua uses .stylua.toml, and lua/neat/statusline/.stylua.toml for the
 # statusline (single quotes), relative to the file it formats.
-#
-# The local hooks run the `check` workflow's other jobs through tests/check.sh.
-# They need nvim, and lua-language-server for the type check (CI pins 3.18.1);
-# nui.nvim is cloned into deps/ on first use.
-default_install_hook_types: [pre-commit, pre-push]
 repos:
   - repo: https://github.com/JohnnyMorganz/StyLua
     rev: v2.6.0
@@ -17,22 +11,14 @@ repos:
         files: ^(lua|plugin|tests)/.*\.lua$
   - repo: local
     hooks:
-      - id: annotations
-        name: every function documents its parameters
-        entry: tests/check.sh annotations
+      # Needs nvim and lua-language-server on $PATH; nui.nvim (for its types)
+      # is cloned into deps/ the first time.
+      - id: lua-language-server
+        name: lua-language-server
+        entry: >-
+          sh -c '[ -d deps/nui.nvim ] || git clone -q --depth 1 https://github.com/MunifTanjim/nui.nvim deps/nui.nvim;
+          VIMRUNTIME=$(nvim --clean --headless -c "lua io.write(vim.env.VIMRUNTIME)" -c q)
+          exec lua-language-server --check . --checklevel=Warning'
         language: system
-        files: ^(lua|plugin)/.*\.lua$
+        files: \.lua$|^\.luarc\.json$
         pass_filenames: false
-      - id: luals
-        name: LuaLS type check (warning level)
-        entry: tests/check.sh luals
-        language: system
-        files: (^(lua|plugin|tests)/.*\.lua|^\.luarc\.json)$
-        pass_filenames: false
-      - id: smoke
-        name: smoke tests (off, statusline, ui, cmdline)
-        entry: tests/check.sh smoke
-        language: system
-        files: ^(lua|plugin|tests)/.*\.lua$
-        pass_filenames: false
-        stages: [pre-push]
