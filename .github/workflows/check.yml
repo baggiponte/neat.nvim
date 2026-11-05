@@ -21,7 +21,11 @@ jobs:
           version: stable
       - name: Fetch nui.nvim
         if: matrix.scenario == 'cmdline'
-        run: git clone --depth 1 https://github.com/MunifTanjim/nui.nvim deps/nui.nvim
+        uses: actions/checkout@v7
+        with:
+          repository: MunifTanjim/nui.nvim
+          ref: 10fc361835c856ba4233ef5ea135b919bf3dce97 # keep in step with nvim-pack-lock.json in the dotfiles
+          path: deps/nui.nvim
       - name: Run tests/smoke.lua
         env:
           SMOKE: ${{ matrix.scenario }}
@@ -54,7 +58,11 @@ jobs:
           neovim: true
           version: stable
       - name: Fetch nui.nvim (types for the cmdline module)
-        run: git clone --depth 1 https://github.com/MunifTanjim/nui.nvim deps/nui.nvim
+        uses: actions/checkout@v7
+        with:
+          repository: MunifTanjim/nui.nvim
+          ref: 10fc361835c856ba4233ef5ea135b919bf3dce97 # keep in step with nvim-pack-lock.json in the dotfiles
+          path: deps/nui.nvim
       - name: Install lua-language-server
         run: |
           mkdir -p "$RUNNER_TEMP/luals"

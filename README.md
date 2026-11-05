@@ -281,9 +281,11 @@ examples too.
 
 ## Develop
 
-Formatting runs on commit through [prek](https://github.com/j178/prek)
-(`prek install` once; `prek run --all-files` to format everything), with the
-StyLua version CI uses.
+StyLua and the LuaLS type check run on commit through
+[prek](https://github.com/j178/prek) (`prek install` once; `prek run
+--all-files` to run them on everything). The type check needs `nvim` and
+`lua-language-server` on your `$PATH`, and reads nui.nvim's types from the
+copy `vim.pack` installs (`~/.local/share/nvim/site/pack/core/opt/nui.nvim`).
 
 Every function is annotated with LuaCATS types. The `check` workflow runs:
 
