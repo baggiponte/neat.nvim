@@ -8,6 +8,8 @@
 -- - "auto": the pager when the message is longer than `pager_lines`, else a
 --   toast (`:ls` with three buffers is a toast, `:map` opens the pager);
 -- - "ui2": ui2's own target (its small message window with 'cmdheight' 0).
+-- Messages that land in ui2's "msg" window get `padding` spaces on both sides
+-- of every line, so the text does not touch the window's border.
 -- "confirm" messages (the question before confirm(), `z=`, inputlist())
 -- always go to neat.cmdline.confirm, which shows choice prompts in its float
 -- and hands the rest back to ui2.
@@ -25,12 +27,14 @@ local MARK = "__neat_msg_show"
 ---@field enabled boolean
 ---@field routes table<string, neat.cmdline.MessageRoute|false> msg_show kind -> route; unlisted kinds stay with ui2
 ---@field pager_lines integer "auto" routes open the pager above this many lines
+---@field padding integer spaces on each side of the text in ui2's "msg" window
 
 ---@type neat.cmdline.MessagesConfig
 M.opts = {
   enabled = true,
   routes = {},
   pager_lines = 5,
+  padding = 1,
 }
 
 local levels = vim.log.levels
@@ -79,18 +83,87 @@ function M.forward(target, kind, ...)
   if not (ui2 and real) then
     return
   end
+  local args = vim.F.pack_len(...)
+  local id, trigger = args[5], args[6]
+  local pager = type(ui2.wins) == "table" and ui2.wins.pager
+  local pager_open = trigger == "typed_cmd"
+    and type(pager) == "number"
+    and vim.api.nvim_win_is_valid(pager)
+    and not vim.api.nvim_win_get_config(pager).hide
+  if
+    M.opts.padding > 0
+    and type(args[1]) == "table"
+    and not args[4] -- `:echon` continues a line that is already padded
+    and not pager_open
+    and (target or M.target(ui2, kind, id, trigger)) == "msg"
+  then
+    args[1] = M.pad(args[1], M.opts.padding)
+  end
   local targets = target and type(ui2.cfg) == "table" and type(ui2.cfg.msg) == "table" and ui2.cfg.msg.targets
   if type(targets) ~= "table" then
-    real(kind, ...)
+    real(kind, vim.F.unpack_len(args))
     return
   end
   local old = targets[kind]
   targets[kind] = target
-  local ok, err = pcall(real, kind, ...)
+  local ok, err = pcall(real, kind, vim.F.unpack_len(args))
   targets[kind] = old
   if not ok then
     error(err, 0)
   end
+end
+
+--- The target ui2 picks for a message, the way its msg_show() does.
+---@param ui2 table
+---@param kind string
+---@param id? integer|string
+---@param trigger? string
+---@return string?
+function M.target(ui2, kind, id, trigger)
+  local targets = type(ui2.cfg) == "table" and type(ui2.cfg.msg) == "table" and ui2.cfg.msg.targets
+  if type(targets) ~= "table" or kind == "search_cmd" then
+    return nil
+  end
+  if trigger and trigger ~= "" and targets[trigger] then
+    return targets[trigger]
+  end
+  if type(id) == "string" then
+    for pat, tgt in pairs(targets) do
+      if id:match(pat) then
+        return tgt
+      end
+    end
+  end
+  return kind ~= "" and targets[kind] or targets.default
+end
+
+--- `content` with `n` spaces on both sides of every line. A leading "\r"
+--- (ui2 reads it as "overwrite the last line") stays first.
+---@param content [integer, string, integer][]
+---@param n integer
+---@return [integer, string, integer][]
+function M.pad(content, n)
+  if n <= 0 or #content == 0 then
+    return content
+  end
+  local pad = (" "):rep(n)
+  local ret = {} ---@type [integer, string, integer][]
+  for i, chunk in ipairs(content) do
+    local text = chunk[2]:gsub("\n", pad .. "\n" .. pad)
+    if i == 1 then
+      local cr, rest = text:match("^(\r?)(.*)$")
+      text = cr .. pad .. rest
+    end
+    local copy = vim.list_slice(chunk) ---@type [integer, string, integer]
+    copy[2] = text
+    ret[i] = copy
+  end
+  -- no trailing pad after a final newline: it would show as a line of spaces
+  local last = ret[#ret]
+  if last[2]:sub(-#pad - 1) ~= "\n" .. pad then
+    last[2] = last[2] .. pad
+  end
+  return ret
 end
 
 local notifying = false
