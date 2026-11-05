@@ -81,6 +81,7 @@ function M.defaults()
     messages = {
       enabled = true,
       pager_lines = 5,
+      padding = 1, -- spaces on each side of the text in ui2's "msg" window
       routes = {
         [""] = "auto",
         echo = "auto",
@@ -140,6 +141,7 @@ local function validate(o)
   vim.validate("messages", o.messages, "table")
   vim.validate("messages.enabled", o.messages.enabled, "boolean")
   vim.validate("messages.pager_lines", o.messages.pager_lines, "number")
+  vim.validate("messages.padding", o.messages.padding, "number")
   vim.validate("messages.routes", o.messages.routes, "table")
   for kind, route in pairs(o.messages.routes) do
     vim.validate("messages.routes[" .. vim.inspect(kind) .. "]", route, function(v)

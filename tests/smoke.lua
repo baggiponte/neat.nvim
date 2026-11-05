@@ -355,10 +355,11 @@ function tests.cmdline()
   check(#health_errors() == 0, ":checkhealth neat has no errors")
 
   -- message routing, against a stand-in for ui2's private module layout
-  local shown = {} ---@type {kind: string, target: string?, prompt: boolean}[]
+  local shown = {} ---@type {kind: string, target: string?, prompt: boolean, text: string}[]
   local fake = { cmd = { prompt = false, level = 0 }, cfg = { msg = { targets = { default = "msg" } } }, msg = {} }
-  function fake.msg.msg_show(kind, ...)
-    shown[#shown + 1] = { kind = kind, target = fake.cfg.msg.targets[kind], prompt = fake.cmd.prompt }
+  function fake.msg.msg_show(kind, content, ...)
+    local text = require("neat.cmdline.messages").text(content)
+    shown[#shown + 1] = { kind = kind, target = fake.cfg.msg.targets[kind], prompt = fake.cmd.prompt, text = text }
   end
   package.loaded["vim._core.ui2"] = fake
   local Messages = require("neat.cmdline.messages")
@@ -420,6 +421,16 @@ function tests.cmdline()
   check(#shown == 2 and shown[2].target == "pager", "shell_out: ui2's pager")
   fake.msg.msg_show("bufwrite", chunks('"x" 1L, 2B written'), false, true, false, 8, "")
   check(#shown == 3 and shown[3].target == nil and #notified == 2, "bufwrite: stays with ui2")
+  check(shown[3].text == ' "x" 1L, 2B written ', "msg window: a space on each side of the text")
+  check(
+    Messages.text(Messages.pad(chunks("\rone\ntwo"), 1)) == "\r one \n two ",
+    "msg window: every line is padded, a leading \\r stays first"
+  )
+  fake.cfg.msg.targets.undo = "cmd"
+  fake.msg.msg_show("undo", chunks("1 change"), false, true, false, 8, "")
+  check(shown[4].text == "1 change", "cmd line: no padding")
+  fake.cfg.msg.targets.undo = nil
+  table.remove(shown)
   Messages.can_notify = function()
     return false
   end

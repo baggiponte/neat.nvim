@@ -84,7 +84,8 @@ cmdline                                                         *neat-cmdline*
     and |g<| keep working. |confirm()| and `:s///c` prompts show in a
     float; `z=` and |inputlist()| lists stay with ui2's dialog. Options:
     `cmdline` (view, format), `messages` (`enabled`, `routes`,
-    `pager_lines`), `confirm` (`style` = "center", "box", "toast" or
+    `pager_lines`, `padding`: spaces on each side of the text in ui2's
+    "msg" window), `confirm` (`style` = "center", "box", "toast" or
     "ui2"), `ui2` (`disable_cmdline`, `pager`),
     `throttle`, `views`, `format`, `debug`. Defaults are in
     lua/neat/cmdline/config/init.lua. Highlight groups are `Neat*`
